@@ -19,7 +19,7 @@ def main():
         ascension = f"a{str(run["ascension"])}" # 0 -> a0
         character = player["character"].split(".")[-1].lower() # "CHARACTER.REGENT" -> "regent"
 
-        dir = f"runs/{ascension}/{character}"
+        dir = f"data/runs/{character}/{ascension}"
         os.makedirs(dir, exist_ok=True)
 
         seed = run["seed"]

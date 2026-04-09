@@ -1,6 +1,8 @@
 import json
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 from enum import Enum
+
+from run_preprocessor.types import MapPoint, PlayerStats, Room
 
 
 class RoomType(Enum):
@@ -10,12 +12,6 @@ class RoomType(Enum):
     BOSS = "BOSS"
     SHOP = "SHOP"
     TREASURE = "TREASURE"
-
-
-class Room:
-    def __init__(self, room_type: RoomType, floor: int):
-        self.room_type: RoomType = room_type
-        self.floor: int = floor
 
 
 @dataclass
@@ -31,16 +27,19 @@ class Event:
 @dataclass
 class RawMapPoint:
     map_point_type: str
-    player_stats: list[dict]
-    rooms: list[dict]
+    player_stats: list[PlayerStats]
+    rooms: list[Room]
     turns_taken: int = 0
 
     # taking only the relevant dict
     @classmethod
-    def from_dict(cls, data: dict) -> "RawMapPoint":
-        valid_keys = {field.name for field in fields(cls)}
-        filtered_data = {k: v for k, v in data.items() if k in valid_keys}
-        return cls(**filtered_data)
+    def from_dict(cls, data: MapPoint) -> "RawMapPoint":
+        return cls(
+            map_point_type=data["map_point_type"],
+            player_stats=data["player_stats"],
+            rooms=data["rooms"],
+            turns_taken=data["rooms"][0]["turns_taken"],
+           )
 
 
 @dataclass
@@ -49,16 +48,16 @@ class RawMapPointHistory:
 
     # taking list of acts
     @classmethod
-    def from_dict(cls, data: list) -> "RawMapPointHistory":
-        map_point_history = []
+    def from_dict(cls, data: list[list[MapPoint]]) -> "RawMapPointHistory":
+        map_point_history: list[list[RawMapPoint]] = []
         for act in data:
-            act_history = []
+            act_history: list[RawMapPoint] = []
             for map_point in act:
                 act_history.append(RawMapPoint.from_dict(map_point))
             map_point_history.append(act_history)
         return cls(map_point_history=map_point_history)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int):
         return self.map_point_history[index]
 
 

@@ -1,6 +1,7 @@
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict
+
+from run_preprocessor.types import Card, Enchantment, Player, Potion, Relic
 
 
 class Character(Enum):
@@ -35,31 +36,38 @@ class Character(Enum):
 class RawPlayer:
     id: str
     character: Character
-    deck: list[dict]
+    deck: list[Card]
     max_potion_slot_count: int
-    relics: list[dict]
+    potions: list[Potion]
+    relics: list[Relic]
 
     @classmethod
-    def from_dict(cls, data: dict) -> "RawPlayer":
-        valid_keys = {field.name for field in fields(cls)}
-        filtered_data = {k: v for k, v in data.items() if k in valid_keys}
-        if "character" in filtered_data:
-            filtered_data["character"] = Character.from_str(filtered_data["character"])
-        return cls(**filtered_data)
+    def from_dict(cls, data: Player) -> "RawPlayer":
+        return cls(
+            id=str(data["id"]),
+            character=Character.from_str(data["character"]),
+            deck=data["deck"],
+            max_potion_slot_count=data["max_potion_slot_count"],
+            potions=data["potions"],
+            relics=data["relics"],
+        )
 
 
 @dataclass
 class RawCard:
     floor_added_to_deck: int
     id: str
-    enchantment: Dict[str, Any] = field(default_factory=dict)
-    current_upgrade_level: int = 0
+    enchantment: Enchantment | None
+    current_upgrade_level: int
 
     @classmethod
-    def from_dict(cls, data: dict) -> "RawCard":
-        valid_keys = {field.name for field in fields(cls)}
-        filtered_data = {k: v for k, v in data.items() if k in valid_keys}
-        return cls(**filtered_data)
+    def from_dict(cls, data: Card) -> "RawCard":
+        return cls(
+            id=data["id"],
+            floor_added_to_deck=data["floor_added_to_deck"],
+            enchantment=data["enchantment"],
+            current_upgrade_level=data["current_upgrade_level"] or 0,
+        )
 
 
 

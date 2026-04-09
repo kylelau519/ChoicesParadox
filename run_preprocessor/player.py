@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from enum import Enum
 
-from run_preprocessor.types import Card, Enchantment, Player, Potion, Relic
+from run_preprocessor.card import RawCard
+from run_preprocessor.types import Card, Player, Potion, Relic
 
 
 class Character(Enum):
@@ -36,39 +37,25 @@ class Character(Enum):
 class RawPlayer:
     id: str
     character: Character
-    deck: list[Card]
+    deck: list[RawCard]
     max_potion_slot_count: int
     potions: list[Potion]
     relics: list[Relic]
 
     @classmethod
     def from_dict(cls, data: Player) -> "RawPlayer":
+        deck: list[RawCard] = []
+        for card in data["deck"]:
+            deck.append(RawCard.from_dict(card))
+
         return cls(
             id=str(data["id"]),
             character=Character.from_str(data["character"]),
-            deck=data["deck"],
+            deck=deck,
             max_potion_slot_count=data["max_potion_slot_count"],
             potions=data["potions"],
             relics=data["relics"],
         )
-
-
-@dataclass
-class RawCard:
-    floor_added_to_deck: int
-    id: str
-    enchantment: Enchantment | None
-    current_upgrade_level: int
-
-    @classmethod
-    def from_dict(cls, data: Card) -> "RawCard":
-        return cls(
-            id=data["id"],
-            floor_added_to_deck=data["floor_added_to_deck"],
-            enchantment=data["enchantment"],
-            current_upgrade_level=data["current_upgrade_level"] or 0,
-        )
-
 
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ class TestSnapshot(unittest.TestCase):
     def test_simple_snapshot(self):
         raw_data = RawData.from_file("testfiles/silent_a0_win.run")
         snapshot = PlayerSnapshot(raw_data)
-        snapshot.walk_to_floor(floor=5, player_id=1)
+        snapshot.walk_to_floor(floor=5)
         self.assertEqual(snapshot.current_hp, 64)
 
 if __name__ == "__main__":

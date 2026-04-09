@@ -13,6 +13,8 @@ from .reader import RawData
 @dataclass
 class PlayerSnapshot:
     data: RawData
+    current_floor: int
+    player_id: int
 
     character: Character
     current_hp: int
@@ -25,6 +27,8 @@ class PlayerSnapshot:
 
     def __init__(self, data: RawData, player_id: int = 1):
         self.data = data
+        self.current_floor = 1
+        self.player_id = player_id
 
         player: RawPlayer | None = None
         for p in data.players:
@@ -59,15 +63,16 @@ class PlayerSnapshot:
         self.relics = []
 
 
-    @classmethod
-    def last(cls, player_id: int = 1):
-        pass
+    # @classmethod
+    # def last(cls, player_id: int = 1):
+    #     pass
 
     def walk(self):
-        pass
+        # TODO: walk should move self to the next MapPoint and update its states
+        self.current_floor += 1
 
     # player's state at a specific act and floor, act starts with 1, floor starts with 1 (Neow)
-    def walk_to_act_floor(self, act: int, floor: int, player_id: int = 1):
+    def walk_to_act_floor(self, act: int, floor: int):
         act_idx = 0
         floor_idx = 0
         target_act_idx = act - 1
@@ -96,14 +101,20 @@ class PlayerSnapshot:
         # relics = relic_tracker.get_relics_at_floor(act, floor, player_id)
 
     # lump sum floor, start with floor 1 (Neow)
-    def walk_to_floor(self, floor: int, player_id: int = 1):
+    def walk_to_floor(self, floor: int):
         if floor < 1:
             raise Exception("at_floor: floor should be at least 1")
 
-        num_acts = len(data.map_point_history.map_point_history)
-        num_floors_a1 = len(data.map_point_history.map_point_history[0]) if num_acts > 0 else 0
-        num_floors_a2 = len(data.map_point_history.map_point_history[1]) if num_acts > 1 else 0
-        num_floors_a3 = len(data.map_point_history.map_point_history[2]) if num_acts > 2 else 0
+        if floor < self.current_floor:
+            raise Exception("at_floor: can't walk back :)")
+
+        if floor == self.current_floor:
+            return
+
+        num_acts = len(self.data.map_point_history.map_point_history)
+        num_floors_a1 = len(self.data.map_point_history.map_point_history[0]) if num_acts > 0 else 0
+        num_floors_a2 = len(self.data.map_point_history.map_point_history[1]) if num_acts > 1 else 0
+        num_floors_a3 = len(self.data.map_point_history.map_point_history[2]) if num_acts > 2 else 0
 
         if floor > num_floors_a1 + num_floors_a2 + num_floors_a3:
             raise Exception("at_floor: floor should be less than total floors")
@@ -117,7 +128,7 @@ class PlayerSnapshot:
             act_num += 1
             floor_num -= num_floors_a2
 
-        self.walk_to_act_floor(act=act_num, floor=floor_num, player_id=player_id)
+        self.walk_to_act_floor(act=act_num, floor=floor_num)
 
 
 if __name__ == "__main__":

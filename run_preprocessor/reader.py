@@ -1,6 +1,5 @@
 import json
 from dataclasses import dataclass, field, fields
-from typing import List
 
 from .mappoint import RawMapPointHistory
 from .player import RawPlayer
@@ -8,13 +7,13 @@ from .player import RawPlayer
 
 @dataclass
 class RunMetadata:
-    acts: List[str]
+    acts: list[str]
     ascension: int
     build_id: str
     game_mode: str
     killed_by_encounter: str
     killed_by_event: str
-    modifiers: List[str]
+    modifiers: list[str]
     seed: str
     schema_version: int
     was_abandoned: bool
@@ -33,7 +32,7 @@ class RunMetadata:
 @dataclass
 class RawData:
     run_metadata: RunMetadata
-    players: List[RawPlayer]
+    players: list[RawPlayer]
     map_point_history: RawMapPointHistory
     _json: dict = field(default_factory=dict)
     _file_path: str = ""
@@ -52,7 +51,7 @@ class RawData:
         )
 
     @classmethod
-    def from_file(cls, file_path):
+    def from_file(cls, file_path: str):
         with open(file_path, "r") as f:
             data = json.load(f)
         run_metadata = RunMetadata.from_dict(data)
@@ -66,7 +65,7 @@ class RawData:
             _file_path=file_path,
         )
 
-    def update():
+    def update(self):
         pass
 
 

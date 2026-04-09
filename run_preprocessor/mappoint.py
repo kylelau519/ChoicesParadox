@@ -1,7 +1,6 @@
 import json
 from dataclasses import dataclass, fields
 from enum import Enum
-from typing import List
 
 
 class RoomType(Enum):
@@ -15,14 +14,14 @@ class RoomType(Enum):
 
 class Room:
     def __init__(self, room_type: RoomType, floor: int):
-        self.room_type = room_type
-        self.floor = floor
+        self.room_type: RoomType = room_type
+        self.floor: int = floor
 
 
 @dataclass
 class Encounter:
     model_id: str
-    monster_ids: List[str]
+    monster_ids: list[str]
 
 
 class Event:
@@ -32,8 +31,8 @@ class Event:
 @dataclass
 class RawMapPoint:
     map_point_type: str
-    player_stats: List[dict]
-    rooms: List[dict]
+    player_stats: list[dict]
+    rooms: list[dict]
     turns_taken: int = 0
 
     # taking only the relevant dict
@@ -46,7 +45,7 @@ class RawMapPoint:
 
 @dataclass
 class RawMapPointHistory:
-    map_point_history: List[List[RawMapPoint]]  # each act is an element
+    map_point_history: list[list[RawMapPoint]]  # each act is an element
 
     # taking list of acts
     @classmethod

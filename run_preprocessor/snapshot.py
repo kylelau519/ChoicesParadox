@@ -1,6 +1,4 @@
-import json
 from dataclasses import dataclass
-from typing import Dict, List
 
 from .player import Character
 from .reader import RawData
@@ -15,13 +13,13 @@ class PlayerSnapshot:
     current_hp: int
     max_hp: int
     current_gold: int
-    deck: Dict[str, int]  # card id to count
+    deck: dict[str, int]  # card id to count
     max_potion_slot_count: int
-    potions: List[str]  # potion ids
-    relics: List[str]
+    potions: list[str]  # potion ids
+    relics: list[str]
 
     @classmethod
-    def last(self, player_id: int = 1):
+    def last(cls, player_id: int = 1):
         pass
 
     # player's state at a specific act and floor, act starts with 1, floor starts with 1 (Neow)
@@ -41,7 +39,7 @@ class PlayerSnapshot:
 
         # deck = deck_tracker.get_deck_at_floor(act, floor, player_id)
         # potions = potion_tracker.get_potions_at_floor(act, floor, player_id)
-        # relics = relic_tracker.get_relics_at_floor(act, floor, player_id
+        # relics = relic_tracker.get_relics_at_floor(act, floor, player_id)
 
     # lump sum floor, start with floor 1 (Neow)
     @classmethod

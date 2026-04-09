@@ -61,17 +61,41 @@ class RawPlayer:
     def generate_starter_deck(cls, character: Character):
         deck: list[RawCard] = []
 
-        # TODO: hard code starter deck
         if character == Character.DEFECT:
-            pass
+            deck.append(RawCard(1, "CARD.ZAP", None, 0))
+            deck.append(RawCard(1, "CARD.DUALCAST", None, 0))
+            for _ in range(4):
+                deck.append(RawCard(1, "CARD.STRIKE_DEFECT", None, 0))
+            for _ in range(4):
+                deck.append(RawCard(1, "CARD.DEFEND_DEFECT", None, 0))
         elif character == Character.IRONCLAD:
-            pass
+            deck.append(RawCard(1, "CARD.BASH", None, 0))
+            for _ in range(5):
+                deck.append(RawCard(1, "CARD.STRIKE_IRONCLAD", None, 0))
+            for _ in range(4):
+                deck.append(RawCard(1, "CARD.DEFEND_IRONCLAD", None, 0))
         elif character == Character.NECROBINDER:
-            pass
+            deck.append(RawCard(1, "CARD.BODYGUARD", None, 0))
+            deck.append(RawCard(1, "CARD.UNLEASH", None, 0))
+            for _ in range(4):
+                deck.append(RawCard(1, "CARD.STRIKE_NECROBINDER", None, 0))
+            for _ in range(4):
+                deck.append(RawCard(1, "CARD.DEFEND_NECROBINDER", None, 0))
         elif character == Character.REGENT:
-            pass
+            deck.append(RawCard(1, "CARD.FALLING_STAR", None, 0))
+            deck.append(RawCard(1, "CARD.VENERATE", None, 0))
+            for _ in range(4):
+                deck.append(RawCard(1, "CARD.STRIKE_REGENT", None, 0))
+            for _ in range(4):
+                deck.append(RawCard(1, "CARD.DEFEND_REGENT", None, 0))
         elif character == Character.SILENT:
-            pass
+            deck.append(RawCard(1, "CARD.NEUTRALIZE", None, 0))
+            deck.append(RawCard(1, "CARD.SURVIVOR", None, 0))
+            for _ in range(5):
+                deck.append(RawCard(1, "CARD.STRIKE_SILENT", None, 0))
+            for _ in range(5):
+                deck.append(RawCard(1, "CARD.DEFEND_SILENT", None, 0))
+
 
         return deck
 

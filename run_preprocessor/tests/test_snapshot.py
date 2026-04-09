@@ -11,6 +11,9 @@ class TestSnapshot(unittest.TestCase):
         self.assertEqual(snapshot.current_hp, 70)
         self.assertEqual(snapshot.current_gold, 99)
 
+        self.assertEqual(snapshot.deck.get("CARD.STRIKE_SILENT"), 5)
+        self.assertEqual(snapshot.deck.get("CARD.ZAP"), None)
+
     def test_simple_snapshot(self):
         raw_data = RawData.from_file("testfiles/silent_a0_win.run")
         snapshot = PlayerSnapshot(raw_data)

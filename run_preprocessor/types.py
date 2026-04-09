@@ -10,6 +10,10 @@ class Card(TypedDict):
     current_upgrade_level: int | None
     enchantment: Enchantment | None
 
+class CardTransform(TypedDict):
+    final_card: Card
+    original_card: Card
+
 class Relic(TypedDict):
     id: str
     floor_added_to_deck: int
@@ -81,11 +85,14 @@ class PlayerStats(TypedDict):
     card_choices: list[CardChoice] | None
     cards_gained: list[Card] | None
     cards_removed: list[Card] | None
+    cards_transformed: list[CardTransform] | None
     potion_choices: list[PotionChoice] | None
     potion_used: list[str] | None
+    potion_discarded: list[str] | None
     relic_choices: list[RelicChoice] | None
     bought_colorless: list[str] | None
     bought_relics: list[str] | None
+    bought_potions: list[str] | None
     rest_site_choices: list[str] | None
     upgraded_cards: list[str] | None
 

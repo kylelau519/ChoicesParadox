@@ -45,6 +45,7 @@ class PlayerSnapshot:
         ):
             raise Exception("__init__: first floor not found in data")
         first_mp: RawMapPoint = data.map_point_history.map_point_history[0][0]
+
         player_stat: PlayerStats | None = None
         for ps in first_mp.player_stats:
             if ps["player_id"] == player_id:
@@ -56,16 +57,38 @@ class PlayerSnapshot:
         self.max_hp = player_stat["max_hp"]
         self.current_gold = player_stat["current_gold"]
 
-        # TODO: generate starter decks
-        # TODO: populate deck, potions, relics
+        starter_deck = RawPlayer.generate_starter_deck(self.character)
         self.deck = {}
+        for card in starter_deck:
+            prev_num_card = self.deck.get(card.id)
+            new_num_card = prev_num_card + 1 if prev_num_card is not None else 1
+            self.deck[card.id] = new_num_card
         self.potions = []
         self.relics = []
 
+        self.update_deck(player_stat)
+        self.update_potions(player_stat)
+        self.update_relics(player_stat)
 
-    # @classmethod
-    # def last(cls, player_id: int = 1):
-    #     pass
+    def update_deck(self, ps: PlayerStats):
+        # cards_gained: list[Card] | None
+        # cards_removed: list[Card] | None
+        # cards_transformed: list[CardTransform] | None
+        # upgraded_cards: list[str] | None
+        # bought_colorless: list[str] | None
+        pass
+
+    def update_potions(self, ps: PlayerStats):
+        # potion_choices: list[PotionChoice] | None
+        # potion_used: list[str] | None
+        # potion_discarded: list[str] | None
+        # bought_potions: list[str] | None
+        pass
+
+    def update_relics(self, ps: PlayerStats):
+        # relic_choices: list[RelicChoice] | None
+        # bought_relics: list[str] | None
+        pass
 
     def walk(self):
         # TODO: walk should move self to the next MapPoint and update its states
@@ -83,22 +106,6 @@ class PlayerSnapshot:
                 self.walk()
                 floor_idx += 1
             act_idx += 1
-
-        # map_point = data.map_point_history.map_point_history[act_idx][floor_idx]
-        # player_stat = map_point.player_stats[
-        #     player_id - 1
-        # ]  # assumed player stats are listed in order of id
-        # current_hp = player_stat["current_hp"]
-        # max_hp = player_stat["max_hp"]
-        # current_gold = player_stat["current_gold"]
-        #
-        # player = data.players[player_id - 1]
-        # character = player.character
-        # max_potion_slot_count = player.max_potion_slot_count
-
-        # deck = deck_tracker.get_deck_at_floor(act, floor, player_id)
-        # potions = potion_tracker.get_potions_at_floor(act, floor, player_id)
-        # relics = relic_tracker.get_relics_at_floor(act, floor, player_id)
 
     # lump sum floor, start with floor 1 (Neow)
     def walk_to_floor(self, floor: int):
@@ -129,8 +136,3 @@ class PlayerSnapshot:
             floor_num -= num_floors_a2
 
         self.walk_to_act_floor(act=act_num, floor=floor_num)
-
-
-if __name__ == "__main__":
-    data = RawData.from_file("testfiles/regent_a0_win.run")
-    print(data.map_point_history[1][12])

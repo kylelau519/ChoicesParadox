@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from run_preprocessor.card import RawCard
-from run_preprocessor.types import Card, Player, Potion, Relic
+from run_preprocessor.types import Player, Potion, Relic
 
 
 class Character(Enum):
@@ -56,6 +56,25 @@ class RawPlayer:
             potions=data["potions"],
             relics=data["relics"],
         )
+
+    @classmethod
+    def generate_starter_deck(cls, character: Character):
+        deck: list[RawCard] = []
+
+        # TODO: hard code starter deck
+        if character == Character.DEFECT:
+            pass
+        elif character == Character.IRONCLAD:
+            pass
+        elif character == Character.NECROBINDER:
+            pass
+        elif character == Character.REGENT:
+            pass
+        elif character == Character.SILENT:
+            pass
+
+        return deck
+
 
 
 if __name__ == "__main__":

@@ -50,4 +50,3 @@ class RelicTracker:
                                 self.relic_history.discard(relic)
 
         return sorted(list(self.relic_history))
-

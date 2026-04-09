@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from run_preprocessor.types import Card, Enchantment
 
+
 @dataclass
 class RawCard:
     floor_added_to_deck: int
@@ -17,5 +18,3 @@ class RawCard:
             enchantment=data.get("enchantment"),
             current_upgrade_level=data.get("current_upgrade_level") or 0,
         )
-
-

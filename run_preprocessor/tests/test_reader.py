@@ -9,5 +9,6 @@ class TestReader(unittest.TestCase):
         self.assertEqual(raw_data.run_metadata.ascension, 0)
         self.assertEqual(raw_data.run_metadata.game_mode, "standard")
 
+
 if __name__ == "__main__":
     _ = unittest.main()

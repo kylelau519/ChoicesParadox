@@ -1,5 +1,6 @@
 import requests
 
+
 class STS2RunsScraper:
     runs_url = "https://sts2runs.com/api/runs/community"
     run_base_url = "https://sts2runs.com/api/runs"
@@ -32,5 +33,3 @@ class STS2RunsScraper:
 
             self.pagination = resp["pagination"]
             self.pagination["page"] += 1
-
-

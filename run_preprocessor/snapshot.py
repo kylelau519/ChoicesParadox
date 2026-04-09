@@ -40,8 +40,8 @@ class PlayerSnapshot:
         self.max_potion_slot_count = 3 if data.run_metadata.ascension < 4 else 2
 
         if (
-            len(data.map_point_history.map_point_history) == 0 or
-            len(data.map_point_history.map_point_history[0]) == 0
+            len(data.map_point_history.map_point_history) == 0
+            or len(data.map_point_history.map_point_history[0]) == 0
         ):
             raise Exception("__init__: first floor not found in data")
         first_mp: RawMapPoint = data.map_point_history.map_point_history[0][0]
@@ -119,9 +119,15 @@ class PlayerSnapshot:
             return
 
         num_acts = len(self.data.map_point_history.map_point_history)
-        num_floors_a1 = len(self.data.map_point_history.map_point_history[0]) if num_acts > 0 else 0
-        num_floors_a2 = len(self.data.map_point_history.map_point_history[1]) if num_acts > 1 else 0
-        num_floors_a3 = len(self.data.map_point_history.map_point_history[2]) if num_acts > 2 else 0
+        num_floors_a1 = (
+            len(self.data.map_point_history.map_point_history[0]) if num_acts > 0 else 0
+        )
+        num_floors_a2 = (
+            len(self.data.map_point_history.map_point_history[1]) if num_acts > 1 else 0
+        )
+        num_floors_a3 = (
+            len(self.data.map_point_history.map_point_history[2]) if num_acts > 2 else 0
+        )
 
         if floor > num_floors_a1 + num_floors_a2 + num_floors_a3:
             raise Exception("at_floor: floor should be less than total floors")

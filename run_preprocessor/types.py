@@ -1,8 +1,10 @@
 from typing import TypedDict
 
+
 class Enchantment(TypedDict):
     id: str
     amount: int
+
 
 class Card(TypedDict):
     id: str
@@ -10,17 +12,21 @@ class Card(TypedDict):
     current_upgrade_level: int | None
     enchantment: Enchantment | None
 
+
 class CardTransform(TypedDict):
     final_card: Card
     original_card: Card
+
 
 class Relic(TypedDict):
     id: str
     floor_added_to_deck: int
 
+
 class Potion(TypedDict):
     id: str
     slot_index: int
+
 
 class Player(TypedDict):
     character: str
@@ -30,24 +36,29 @@ class Player(TypedDict):
     potions: list[Potion]
     relics: list[Relic]
 
+
 class Room(TypedDict):
     model_id: str | None
     room_type: str
     turns_taken: int
     monster_ids: list[str] | None
 
+
 class CardChoice(TypedDict):
     card: Card
     was_picked: bool
+
 
 class Title(TypedDict):
     key: str
     table: str
 
+
 class AncientChoice(TypedDict):
     TextKey: str
     title: Title
     was_chosen: bool
+
 
 class Variable(TypedDict):
     type: str
@@ -55,17 +66,21 @@ class Variable(TypedDict):
     bool_value: bool
     string_value: str
 
+
 class EventChoice(TypedDict):
     title: Title
     variables: dict[str, Variable] | None
+
 
 class RelicChoice(TypedDict):
     choice: str
     was_picked: bool
 
+
 class PotionChoice(TypedDict):
     choice: str
     was_picked: bool
+
 
 class PlayerStats(TypedDict):
     current_gold: int
@@ -101,6 +116,7 @@ class MapPoint(TypedDict):
     map_point_type: str
     player_stats: list[PlayerStats]
     rooms: list[Room]
+
 
 class RunHistory(TypedDict):
     acts: list[str]

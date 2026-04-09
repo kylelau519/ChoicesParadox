@@ -96,9 +96,7 @@ class RawPlayer:
             for _ in range(5):
                 deck.append(RawCard(1, "CARD.DEFEND_SILENT", None, 0))
 
-
         return deck
-
 
 
 if __name__ == "__main__":

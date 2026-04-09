@@ -2,7 +2,9 @@ from .mappoint import RawMapPointHistory
 
 
 class RelicTracker:
-    def __init__(self, data: RawMapPointHistory, starting_relics: list[str] | None = None):
+    def __init__(
+        self, data: RawMapPointHistory, starting_relics: list[str] | None = None
+    ):
         self.data: RawMapPointHistory = data
         self.starting_relics: list[str] = starting_relics or []
         self.relic_history: set[str] = set()

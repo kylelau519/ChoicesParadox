@@ -39,7 +39,7 @@ class RawMapPoint:
             player_stats=data["player_stats"],
             rooms=data["rooms"],
             turns_taken=data["rooms"][0]["turns_taken"],
-           )
+        )
 
 
 @dataclass

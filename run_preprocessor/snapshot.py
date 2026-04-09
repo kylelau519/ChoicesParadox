@@ -90,10 +90,6 @@ class PlayerSnapshot:
         # bought_relics: list[str] | None
         pass
 
-    def walk(self):
-        # TODO: walk should move self to the next MapPoint and update its states
-        self.current_floor += 1
-
     # player's state at a specific act and floor, act starts with 1, floor starts with 1 (Neow)
     def walk_to_act_floor(self, act: int, floor: int):
         act_idx = 0
@@ -103,9 +99,27 @@ class PlayerSnapshot:
 
         while act_idx <= target_act_idx:
             while floor_idx <= target_floor_idx:
-                self.walk()
+                mp: RawMapPoint = self.data.map_point_history.map_point_history[
+                    act_idx
+                ][floor_idx]
+                player_stat: PlayerStats | None = None
+                for ps in mp.player_stats:
+                    if ps["player_id"] == self.player_id:
+                        player_stat = ps
+                if player_stat == None:
+                    raise Exception("__init__: player not found in map point")
+
+                self.current_hp = player_stat["current_hp"]
+                self.max_hp = player_stat["max_hp"]
+                self.current_gold = player_stat["current_gold"]
+
+                self.update_deck(player_stat)
+                self.update_potions(player_stat)
+                self.update_relics(player_stat)
+
                 floor_idx += 1
             act_idx += 1
+        self.current_floor += 1
 
     # lump sum floor, start with floor 1 (Neow)
     def walk_to_floor(self, floor: int):

@@ -1,5 +1,5 @@
 import json
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 from typing import List
 
 from .mappoint import RawMapPointHistory
@@ -23,7 +23,7 @@ class RunMetadata:
     # taking the whole json
     @classmethod
     def from_dict(cls, data: dict) -> "RunMetadata":
-        valid_keys = {field.name for field in fields(cls)}
+        valid_keys = {f.name for f in fields(cls)}
         filtered_data = {k: v for k, v in data.items() if k in valid_keys}
         return cls(**filtered_data)
 
@@ -31,14 +31,16 @@ class RunMetadata:
 # reader is a collection of unprocessed data from the run. It stores simple info like the whole map_point_history and metadata, but nothing like tracking the deck.
 # it can build from deserialized json or a path to a json file
 @dataclass
-class Reader:
+class RawData:
     run_metadata: RunMetadata
     players: List[RawPlayer]
     map_point_history: RawMapPointHistory
+    _json: dict = field(default_factory=dict)
+    _file_path: str = ""
 
     @classmethod
-    def from_json(cls, json_str):
-        data = json.loads(json_str)
+    def from_json(cls, json):
+        data = json.loads(json)
         run_metadata = RunMetadata.from_dict(data)
         players = [RawPlayer.from_dict(player) for player in data["players"]]
         map_point_history = RawMapPointHistory.from_dict(data["map_point_history"])
@@ -46,6 +48,7 @@ class Reader:
             run_metadata=run_metadata,
             players=players,
             map_point_history=map_point_history,
+            _json=data,
         )
 
     @classmethod
@@ -59,10 +62,15 @@ class Reader:
             run_metadata=run_metadata,
             players=players,
             map_point_history=map_point_history,
+            _json=data,
+            _file_path=file_path,
         )
+
+    def update():
+        pass
 
 
 if __name__ == "__main__":
-    raw_data = Reader.from_file("testfiles/ironclad_a5_lose.run")
+    raw_data = RawData.from_file("testfiles/ironclad_a5_lose.run")
     assert raw_data.run_metadata.ascension == 5
     assert raw_data.run_metadata.game_mode == "standard"

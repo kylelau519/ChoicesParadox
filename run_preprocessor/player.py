@@ -2,6 +2,8 @@ from dataclasses import dataclass, field, fields
 from enum import Enum
 from typing import Any, Dict
 
+from .mappoint import RawMapPointHistory
+
 
 class Character(Enum):
     IRONCLAD = "IRONCLAD"
@@ -60,6 +62,12 @@ class RawCard:
         valid_keys = {field.name for field in fields(cls)}
         filtered_data = {k: v for k, v in data.items() if k in valid_keys}
         return cls(**filtered_data)
+
+
+class RelicTracker:
+    def __init__(self, data: RawMapPointHistory):
+        self.relic_history = set()
+        # + relic keywords: relic_choice+was_picked, bought_relics:list
 
 
 if __name__ == "__main__":

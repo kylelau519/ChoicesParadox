@@ -32,7 +32,7 @@ class Event:
 @dataclass
 class RawMapPoint:
     map_point_type: str
-    player_stats: dict
+    player_stats: List[dict]
     rooms: List[dict]
     turns_taken: int = 0
 
@@ -58,6 +58,9 @@ class RawMapPointHistory:
                 act_history.append(RawMapPoint.from_dict(map_point))
             map_point_history.append(act_history)
         return cls(map_point_history=map_point_history)
+
+    def __getitem__(self, index):
+        return self.map_point_history[index]
 
 
 if __name__ == "__main__":

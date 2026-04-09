@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 
-from .player import Character
+from run_preprocessor.mappoint import RawMapPoint
+from run_preprocessor.types import PlayerStats
+
+from .player import Character, RawPlayer
 from .reader import RawData
 
 
@@ -9,6 +12,8 @@ from .reader import RawData
 # This is constructed from reader
 @dataclass
 class PlayerSnapshot:
+    data: RawData
+
     character: Character
     current_hp: int
     max_hp: int
@@ -18,6 +23,42 @@ class PlayerSnapshot:
     potions: list[str]  # potion ids
     relics: list[str]
 
+    def __init__(self, data: RawData, player_id: int = 1):
+        self.data = data
+
+        player: RawPlayer | None = None
+        for p in data.players:
+            if p.id == str(player_id):
+                player = p
+        if player == None:
+            raise Exception("__init__: player not found in data")
+        self.character = player.character
+        self.max_potion_slot_count = 3 if data.run_metadata.ascension < 4 else 2
+
+        if (
+            len(data.map_point_history.map_point_history) == 0 or
+            len(data.map_point_history.map_point_history[0]) == 0
+        ):
+            raise Exception("__init__: first floor not found in data")
+        first_mp: RawMapPoint = data.map_point_history.map_point_history[0][0]
+        player_stat: PlayerStats | None = None
+        for ps in first_mp.player_stats:
+            if ps["player_id"] == player_id:
+                player_stat = ps
+        if player_stat == None:
+            raise Exception("__init__: player not found in map point")
+
+        self.current_hp = player_stat["current_hp"]
+        self.max_hp = player_stat["max_hp"]
+        self.current_gold = player_stat["current_gold"]
+
+        # TODO: generate starter decks
+        # TODO: populate deck, potions, relics
+        self.deck = {}
+        self.potions = []
+        self.relics = []
+
+
     @classmethod
     def last(cls, player_id: int = 1):
         pass
@@ -26,27 +67,36 @@ class PlayerSnapshot:
         pass
 
     # player's state at a specific act and floor, act starts with 1, floor starts with 1 (Neow)
-    @classmethod
-    def at_act_floor(cls, data: RawData, act: int, floor: int, player_id: int = 1):
-        map_point = data.map_point_history[act - 1][floor - 1]
-        player_stat = map_point.player_stats[
-            player_id - 1
-        ]  # assumed player stats are listed in order of id
-        current_hp = player_stat["current_hp"]
-        max_hp = player_stat["max_hp"]
-        current_gold = player_stat["current_gold"]
+    def walk_to_act_floor(self, act: int, floor: int, player_id: int = 1):
+        act_idx = 0
+        floor_idx = 0
+        target_act_idx = act - 1
+        target_floor_idx = floor - 1
 
-        player = data.players[player_id - 1]
-        character = player.character
-        max_potion_slot_count = player.max_potion_slot_count
+        while act_idx <= target_act_idx:
+            while floor_idx <= target_floor_idx:
+                self.walk()
+                floor_idx += 1
+            act_idx += 1
+
+        # map_point = data.map_point_history.map_point_history[act_idx][floor_idx]
+        # player_stat = map_point.player_stats[
+        #     player_id - 1
+        # ]  # assumed player stats are listed in order of id
+        # current_hp = player_stat["current_hp"]
+        # max_hp = player_stat["max_hp"]
+        # current_gold = player_stat["current_gold"]
+        #
+        # player = data.players[player_id - 1]
+        # character = player.character
+        # max_potion_slot_count = player.max_potion_slot_count
 
         # deck = deck_tracker.get_deck_at_floor(act, floor, player_id)
         # potions = potion_tracker.get_potions_at_floor(act, floor, player_id)
         # relics = relic_tracker.get_relics_at_floor(act, floor, player_id)
 
     # lump sum floor, start with floor 1 (Neow)
-    @classmethod
-    def at_floor(cls, data: RawData, floor: int, player_id: int = 1):
+    def walk_to_floor(self, floor: int, player_id: int = 1):
         if floor < 1:
             raise Exception("at_floor: floor should be at least 1")
 
@@ -67,9 +117,7 @@ class PlayerSnapshot:
             act_num += 1
             floor_num -= num_floors_a2
 
-        cls.at_act_floor(data=data, act=act_num, floor=floor_num, player_id=player_id)
-
-        return data
+        self.walk_to_act_floor(act=act_num, floor=floor_num, player_id=player_id)
 
 
 if __name__ == "__main__":

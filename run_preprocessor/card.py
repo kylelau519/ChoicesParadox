@@ -15,7 +15,7 @@ class RawCard:
             id=data["id"],
             floor_added_to_deck=data["floor_added_to_deck"],
             enchantment=data.get("enchantment"),
-            current_upgrade_level=data.get("current_upgrade_level") or 1,
+            current_upgrade_level=data.get("current_upgrade_level") or 0,
         )
 
 

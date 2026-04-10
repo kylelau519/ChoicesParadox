@@ -1,6 +1,8 @@
 import json
 from dataclasses import dataclass, field, fields
-from typing import List
+from typing import cast
+
+from .types import RunHistory
 
 from .mappoint import RawMapPointHistory
 from .player import RawPlayer
@@ -8,13 +10,13 @@ from .player import RawPlayer
 
 @dataclass
 class RunMetadata:
-    acts: List[str]
+    acts: list[str]
     ascension: int
     build_id: str
     game_mode: str
     killed_by_encounter: str
     killed_by_event: str
-    modifiers: List[str]
+    modifiers: list[str]
     seed: str
     schema_version: int
     was_abandoned: bool
@@ -22,10 +24,20 @@ class RunMetadata:
 
     # taking the whole json
     @classmethod
-    def from_dict(cls, data: dict) -> "RunMetadata":
-        valid_keys = {f.name for f in fields(cls)}
-        filtered_data = {k: v for k, v in data.items() if k in valid_keys}
-        return cls(**filtered_data)
+    def from_dict(cls, data: RunHistory) -> "RunMetadata":
+        return cls(
+            acts=data["acts"],
+            ascension=data["ascension"],
+            build_id=data["build_id"],
+            game_mode=data["game_mode"],
+            killed_by_encounter=data["killed_by_encounter"],
+            killed_by_event=data["killed_by_event"],
+            modifiers=data["modifiers"],
+            seed=data["seed"],
+            schema_version=data["schema_version"],
+            was_abandoned=data["was_abandoned"],
+            win=data["win"],
+        )
 
 
 # reader is a collection of unprocessed data from the run. It stores simple info like the whole map_point_history and metadata, but nothing like tracking the deck.
@@ -33,9 +45,9 @@ class RunMetadata:
 @dataclass
 class RawData:
     run_metadata: RunMetadata
-    players: List[RawPlayer]
+    players: list[RawPlayer]
     map_point_history: RawMapPointHistory
-    _json: dict = field(default_factory=dict)
+    _json: RunHistory
     _file_path: str = ""
 
     @classmethod
@@ -52,9 +64,9 @@ class RawData:
         )
 
     @classmethod
-    def from_file(cls, file_path):
+    def from_file(cls, file_path: str):
         with open(file_path, "r") as f:
-            data = json.load(f)
+            data = cast(RunHistory, json.load(f))
         run_metadata = RunMetadata.from_dict(data)
         players = [RawPlayer.from_dict(player) for player in data["players"]]
         map_point_history = RawMapPointHistory.from_dict(data["map_point_history"])
@@ -66,7 +78,7 @@ class RawData:
             _file_path=file_path,
         )
 
-    def update():
+    def update(self):
         pass
 
 

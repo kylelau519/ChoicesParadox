@@ -1,8 +1,8 @@
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict
 
-from .mappoint import RawMapPointHistory
+from run_preprocessor.card import RawCard
+from run_preprocessor.types import Player, Potion, Relic
 
 
 class Character(Enum):
@@ -37,82 +37,79 @@ class Character(Enum):
 class RawPlayer:
     id: str
     character: Character
-    deck: list[dict]
+    deck: list[RawCard]
     max_potion_slot_count: int
-    relics: list[dict]
+    potions: list[Potion]
+    relics: list[Relic]
 
     @classmethod
-    def from_dict(cls, data: dict) -> "RawPlayer":
-        valid_keys = {field.name for field in fields(cls)}
-        filtered_data = {k: v for k, v in data.items() if k in valid_keys}
-        if "character" in filtered_data:
-            filtered_data["character"] = Character.from_str(filtered_data["character"])
-        return cls(**filtered_data)
+    def from_dict(cls, data: Player) -> "RawPlayer":
+        deck: list[RawCard] = []
+        for card in data["deck"]:
+            deck.append(RawCard.from_dict(card))
 
-
-@dataclass
-class RawCard:
-    floor_added_to_deck: int
-    id: str
-    enchantment: Dict[str, Any] = field(default_factory=dict)
-    current_upgrade_level: int = 0
+        return cls(
+            id=str(data["id"]),
+            character=Character.from_str(data["character"]),
+            deck=deck,
+            max_potion_slot_count=data["max_potion_slot_count"],
+            potions=data["potions"],
+            relics=data["relics"],
+        )
 
     @classmethod
-    def from_dict(cls, data: dict) -> "RawCard":
-        valid_keys = {field.name for field in fields(cls)}
-        filtered_data = {k: v for k, v in data.items() if k in valid_keys}
-        return cls(**filtered_data)
+    def generate_starter_deck(cls, character: Character):
+        deck: list[RawCard] = []
 
+        if character == Character.DEFECT:
+            deck.append(RawCard(1, "CARD.ZAP", None, 0))
+            deck.append(RawCard(1, "CARD.DUALCAST", None, 0))
+            for _ in range(4):
+                deck.append(RawCard(1, "CARD.STRIKE_DEFECT", None, 0))
+            for _ in range(4):
+                deck.append(RawCard(1, "CARD.DEFEND_DEFECT", None, 0))
+        elif character == Character.IRONCLAD:
+            deck.append(RawCard(1, "CARD.BASH", None, 0))
+            for _ in range(5):
+                deck.append(RawCard(1, "CARD.STRIKE_IRONCLAD", None, 0))
+            for _ in range(4):
+                deck.append(RawCard(1, "CARD.DEFEND_IRONCLAD", None, 0))
+        elif character == Character.NECROBINDER:
+            deck.append(RawCard(1, "CARD.BODYGUARD", None, 0))
+            deck.append(RawCard(1, "CARD.UNLEASH", None, 0))
+            for _ in range(4):
+                deck.append(RawCard(1, "CARD.STRIKE_NECROBINDER", None, 0))
+            for _ in range(4):
+                deck.append(RawCard(1, "CARD.DEFEND_NECROBINDER", None, 0))
+        elif character == Character.REGENT:
+            deck.append(RawCard(1, "CARD.FALLING_STAR", None, 0))
+            deck.append(RawCard(1, "CARD.VENERATE", None, 0))
+            for _ in range(4):
+                deck.append(RawCard(1, "CARD.STRIKE_REGENT", None, 0))
+            for _ in range(4):
+                deck.append(RawCard(1, "CARD.DEFEND_REGENT", None, 0))
+        elif character == Character.SILENT:
+            deck.append(RawCard(1, "CARD.NEUTRALIZE", None, 0))
+            deck.append(RawCard(1, "CARD.SURVIVOR", None, 0))
+            for _ in range(5):
+                deck.append(RawCard(1, "CARD.STRIKE_SILENT", None, 0))
+            for _ in range(5):
+                deck.append(RawCard(1, "CARD.DEFEND_SILENT", None, 0))
 
-class RelicTracker:
-    def __init__(self, data: RawMapPointHistory, starting_relics: list[str] = None):
-        self.data = data
-        self.starting_relics = starting_relics or []
-        self.relic_history = set()
+        return deck
 
-    # not working yet
-    def track_act_floor(self, act: int, floor: int, player_id: int = 1) -> list[str]:
-        # first check if rawmapPointHistory has that floor
-        self.relic_history = set(self.starting_relics)
-
-        if act >= len(self.data.map_point_history):
-            return sorted(list(self.relic_history))
-
-        # iterate over the history:
-        for a in range(act + 1):
-            nodes = self.data.map_point_history[a]
-            limit = floor + 1 if a == act else len(nodes)
-
-            for f in range(min(limit, len(nodes))):
-                map_point = nodes[f]
-                # get player_stats, get the correct stat with player_id.
-                for stats in map_point.player_stats:
-                    if stats.get("player_id") == player_id:
-                        # check if keyword relic_choices is there, if so check if was_picked is true, if so add to relic_history
-                        if "relic_choices" in stats:
-                            for choice in stats["relic_choices"]:
-                                if choice.get("was_picked"):
-                                    self.relic_history.add(choice["choice"])
-
-                        # check if keyword bought_relics is there, if so add all relics in that list to relic_history
-                        if "bought_relics" in stats:
-                            for relic in stats["bought_relics"]:
-                                self.relic_history.add(relic)
-
-                        # check if keyword relics_removed is there, if so remove that relic from relic_history
-                        if "relics_removed" in stats:
-                            for relic in stats["relics_removed"]:
-                                self.relic_history.discard(relic)
-
-                        if "relic_removed" in stats:
-                            relic = stats["relic_removed"]
-                            if isinstance(relic, list):
-                                for r in relic:
-                                    self.relic_history.discard(r)
-                            else:
-                                self.relic_history.discard(relic)
-
-        return sorted(list(self.relic_history))
+    @classmethod
+    def generate_starter_relic(cls, character: Character):
+        if character == Character.DEFECT:
+            return "RELIC.CRACKED_CORE"
+        elif character == Character.IRONCLAD:
+            return "RELIC.BURNING_BLOOD"
+        elif character == Character.NECROBINDER:
+            return "RELIC.BOUND_PHYLACTERY"
+        elif character == Character.REGENT:
+            return "RELIC.DIVINE_RIGHT"
+        elif character == Character.SILENT:
+            return "RELIC.RING_OF_THE_SNAKE"
 
 
 if __name__ == "__main__":
@@ -125,9 +122,9 @@ if __name__ == "__main__":
     assert player.relics[0] == {"floor_added_to_deck": 1, "id": "RELIC.BURNING_BLOOD"}
     assert player.deck[0] == {"floor_added_to_deck": 1, "id": "CARD.STRIKE_IRONCLAD"}
 
-    relic_file = json.load(open("testfiles/necrobinder_a7_remove_relics.run", "r"))
-    relics = RelicTracker(
-        RawMapPointHistory.from_dict(file["map_point_history"]),
-        starting_relics=["RELIC.STARTER_RELIC"],
-    )
-    print(relics.track_act_floor(2, 5))
+    # relic_file = json.load(open("testfiles/necrobinder_a7_remove_relics.run", "r"))
+    # relics = RelicTracker(
+    #     RawMapPointHistory.from_dict(file["map_point_history"]),
+    #     starting_relics=["RELIC.STARTER_RELIC"],
+    # )
+    # print(relics.track_act_floor(2, 5))

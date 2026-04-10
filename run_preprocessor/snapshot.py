@@ -118,6 +118,7 @@ class PlayerSnapshot:
             for potion in potion_used:
                 _ = self.potions.index(potion)
                 self.potions.remove(potion)
+                # TODO: track used potions
 
         potion_discarded = ps.get("potion_discarded")
         if potion_discarded != None:

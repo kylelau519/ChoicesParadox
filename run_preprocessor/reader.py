@@ -2,10 +2,9 @@ import json
 from dataclasses import dataclass, field, fields
 from typing import cast
 
-from .types import RunHistory
-
 from .mappoint import RawMapPointHistory
 from .player import RawPlayer
+from .types import RunHistory
 
 
 @dataclass
@@ -51,8 +50,8 @@ class RawData:
     _file_path: str = ""
 
     @classmethod
-    def from_json(cls, json):
-        data = json.loads(json)
+    def from_json(cls, data):
+        # data = json.loads(json)
         run_metadata = RunMetadata.from_dict(data)
         players = [RawPlayer.from_dict(player) for player in data["players"]]
         map_point_history = RawMapPointHistory.from_dict(data["map_point_history"])
@@ -84,5 +83,10 @@ class RawData:
 
 if __name__ == "__main__":
     raw_data = RawData.from_file("testfiles/ironclad_a5_lose.run")
+    assert raw_data.run_metadata.ascension == 5
+    assert raw_data.run_metadata.game_mode == "standard"
+
+    json_data = json.load(open("testfiles/ironclad_a5_lose.run", "r"))
+    raw_data = RawData.from_json(json_data)
     assert raw_data.run_metadata.ascension == 5
     assert raw_data.run_metadata.game_mode == "standard"

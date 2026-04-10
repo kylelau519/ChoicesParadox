@@ -14,9 +14,8 @@ from .reader import RawData
 @dataclass
 class PlayerSnapshot:
     data: RawData
-    current_floor: int
-    player_id: int
 
+    player_id: int
     character: Character
     current_hp: int
     max_hp: int
@@ -26,9 +25,12 @@ class PlayerSnapshot:
     potions: dict[str, int]  # potion ids
     relics: dict[str, int]
 
+    current_act_floor: int = 1
+    current_act: int = 1
+    current_lumpsum_floor: int = 1
+
     def __init__(self, data: RawData, player_id: int = 1):
         self.data = data
-        self.current_floor = 1
         self.player_id = player_id
 
         player: RawPlayer | None = None
@@ -40,10 +42,7 @@ class PlayerSnapshot:
         self.character = player.character
         self.max_potion_slot_count = 3 if data.run_metadata.ascension < 4 else 2
 
-        if (
-            len(data.map_point_history.map_point_history) == 0
-            or len(data.map_point_history.map_point_history[0]) == 0
-        ):
+        if len(data.map_point_history.flatten()) == 0:
             raise Exception("__init__: first floor not found in data")
         first_mp: RawMapPoint = data.map_point_history.map_point_history[0][0]
 
@@ -70,8 +69,6 @@ class PlayerSnapshot:
         self.update_deck(player_stat)
         self.update_potions(player_stat)
         self.update_relics(player_stat)
-
-        self.current_floor += 1
 
     def update_deck(self, ps: PlayerStats):
         cards_gained = ps.get("cards_gained")
@@ -119,6 +116,7 @@ class PlayerSnapshot:
         if potion_used != None:
             for potion in potion_used:
                 self.potions[potion] = self.potions.get(potion, 0) - 1
+
                 # TODO: track used potions
 
         potion_discarded = ps.get("potion_discarded")
@@ -134,100 +132,66 @@ class PlayerSnapshot:
                     self.relics[relic["choice"]] = (
                         self.relics.get(relic["choice"], 0) + 1
                     )
-                    # self.relics.append(relic.get("choice"))
 
         relics_removed = ps.get("relics_removed")
         if relics_removed != None:
             for relic in relics_removed:
                 self.relics[relic] = self.relics.get(relic, 0) - 1
 
-    # player's state at a specific act and floor, act starts with 1, floor starts with 1 (Neow)
-    def walk_to_act_floor(
-        self, from_act: int, from_floor: int, to_act: int, to_floor: int
-    ):
-        act_idx = from_act - 1
-        floor_idx = from_floor - 1
-        to_act_idx = to_act - 1
-        to_floor_idx = to_floor - 1
+    def update_attributes(self, ps: PlayerStats):
+        self.current_hp = ps["current_hp"]
+        self.max_hp = ps["max_hp"]
+        self.current_gold = ps["current_gold"]
 
-        while act_idx <= to_act_idx:
-            current_act_len = len(
-                self.data.map_point_history.map_point_history[act_idx]
-            )
-            while (act_idx < to_act_idx and floor_idx < current_act_len) or (
-                floor_idx <= to_floor_idx
-            ):
-                mp: RawMapPoint = self.data.map_point_history.map_point_history[
-                    act_idx
-                ][floor_idx]
-                player_stat: PlayerStats | None = None
-                for ps in mp.player_stats:
-                    if ps["player_id"] == self.player_id:
-                        player_stat = ps
-                if player_stat == None:
-                    raise Exception("__init__: player not found in map point")
+    def walk(self):
+        next_floor = self.current_lumpsum_floor + 1
+        mp: RawMapPoint = self.data.map_point_history.flatten()[next_floor - 1]
+        player_stat: PlayerStats | None = None
+        for ps in mp.player_stats:
+            if ps["player_id"] == self.player_id:
+                player_stat = ps
+        if player_stat == None:
+            raise Exception("walk: player not found in map point")
 
-                self.current_hp = player_stat["current_hp"]
-                self.max_hp = player_stat["max_hp"]
-                self.current_gold = player_stat["current_gold"]
-
-                self.update_deck(player_stat)
-                self.update_potions(player_stat)
-                self.update_relics(player_stat)
-
-                self.current_floor += 1
-                floor_idx += 1
-            floor_idx = 0
-            act_idx += 1
-
-    def floor_to_act_floor(self, floor: int):
-        if floor < 1:
-            raise Exception("floor_to_act_floor: floor should be at least 1")
-
-        num_acts = len(self.data.map_point_history.map_point_history)
-        num_floors_a1 = (
-            len(self.data.map_point_history.map_point_history[0]) if num_acts > 0 else 0
-        )
-        num_floors_a2 = (
-            len(self.data.map_point_history.map_point_history[1]) if num_acts > 1 else 0
-        )
-        num_floors_a3 = (
-            len(self.data.map_point_history.map_point_history[2]) if num_acts > 2 else 0
-        )
-
-        if floor > num_floors_a1 + num_floors_a2 + num_floors_a3:
-            raise Exception(
-                "floor_to_act_floor: floor should be less than total floors"
-            )
-
-        act_num = 1
-        floor_num = floor
-        if floor_num > num_floors_a1:
-            act_num += 1
-            floor_num -= num_floors_a1
-        if floor_num > num_floors_a2:
-            act_num += 1
-            floor_num -= num_floors_a2
-
-        return act_num, floor_num
+        self.update_attributes(player_stat)
+        self.update_deck(player_stat)
+        self.update_potions(player_stat)
+        self.update_relics(player_stat)
+        self.current_lumpsum_floor = next_floor
+        self.update_floor()
 
     # lump sum floor, start with floor 1 (Neow)
     def walk_to_floor(self, floor: int):
         if floor < 1:
-            raise Exception("at_floor: floor should be at least 1")
+            raise Exception("walk_to_floor: floor should be at least 1")
 
-        if floor < self.current_floor:
-            raise Exception("at_floor: can't walk back :)")
+        if floor < self.current_lumpsum_floor:
+            raise Exception("walk_to_floor: can't walk back :)")
 
-        if floor == self.current_floor:
+        if floor == self.current_lumpsum_floor:
             return
 
-        from_act_num, from_floor_num = self.floor_to_act_floor(self.current_floor)
-        to_act_num, to_floor_num = self.floor_to_act_floor(floor)
+        while self.current_lumpsum_floor < floor:
+            self.walk()
 
-        self.walk_to_act_floor(
-            from_act=from_act_num,
-            from_floor=from_floor_num,
-            to_act=to_act_num,
-            to_floor=to_floor_num,
-        )
+    # player's state at a specific act and floor, act starts with 1, floor starts with 1 (Neow)
+    def walk_to_act_floor(self, act: int, floor_in_act: int):
+        act_num_floors = self.data.map_point_history.act_num_floors
+        if act < 1 or act > len(act_num_floors):
+            raise Exception("walk_to_act_floor: act should be between 1 and num acts")
+        if floor_in_act < 1 or floor_in_act > act_num_floors[act - 1]:
+            raise Exception(
+                "walk_to_act_floor: floor_in_act should be between 1 and num floors in act"
+            )
+        lump_sum_floor = sum(act_num_floors[: act - 1]) + floor_in_act
+        self.walk_to_floor(lump_sum_floor)
+
+    def update_floor(self):
+        act_num_floors = self.data.map_point_history.act_num_floors
+        floor = self.current_lumpsum_floor
+        act = 0
+        while act < len(act_num_floors) and floor > act_num_floors[act]:
+            floor -= act_num_floors[act]
+            act += 1
+        self.current_act = act + 1
+        self.current_act_floor = floor

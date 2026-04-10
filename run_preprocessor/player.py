@@ -98,6 +98,19 @@ class RawPlayer:
 
         return deck
 
+    @classmethod
+    def generate_starter_relic(cls, character: Character):
+        if character == Character.DEFECT:
+            return "RELIC.CRACKED_CORE"
+        elif character == Character.IRONCLAD:
+            return "RELIC.BURNING_BLOOD"
+        elif character == Character.NECROBINDER:
+            return "RELIC.BOUND_PHYLACTERY"
+        elif character == Character.REGENT:
+            return "RELIC.DIVINE_RIGHT"
+        elif character == Character.SILENT:
+            return "RELIC.RING_OF_THE_SNAKE"
+
 
 if __name__ == "__main__":
     import json

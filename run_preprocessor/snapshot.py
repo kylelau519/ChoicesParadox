@@ -61,7 +61,9 @@ class PlayerSnapshot:
         starter_deck = RawPlayer.generate_starter_deck(self.character)
         self.deck = Deck(starter_deck)
         self.potions = []
+        starter_relic = RawPlayer.generate_starter_relic(self.character)
         self.relics = []
+        self.relics.append(starter_relic)
 
         self.update_deck(player_stat)
         self.update_potions(player_stat)
@@ -89,12 +91,18 @@ class PlayerSnapshot:
                 self.deck.remove_card(card["original_card"])
                 self.deck.add_card(card["final_card"])
 
-        cards_upgraded = ps.get("upgraded_cards")
-        if cards_upgraded != None:
-            for id in cards_upgraded:
+        upgraded_cards = ps.get("upgraded_cards")
+        if upgraded_cards != None:
+            for id in upgraded_cards:
                 self.deck.remove(id)
                 self.deck.add(f"{id}+")
-        # TODO: downgrade
+
+        downgraded_cards = ps.get("downgraded_cards")
+        if downgraded_cards != None:
+            for id in downgraded_cards:
+                self.deck.remove(id)
+                downgraded = id.removesuffix("+")
+                self.deck.add(downgraded)
 
     def update_potions(self, ps: PlayerStats):
         # potion_choices: list[PotionChoice] | None
@@ -104,9 +112,18 @@ class PlayerSnapshot:
         pass
 
     def update_relics(self, ps: PlayerStats):
-        # relic_choices: list[RelicChoice] | None
-        # bought_relics: list[str] | None
-        pass
+        relic_choices = ps.get("relic_choices")
+        if relic_choices != None:
+            for relic in relic_choices:
+                if relic.get("was_picked"):
+                    self.relics.append(relic.get("choice"))
+
+        relics_removed = ps.get("relics_removed")
+        if relics_removed != None:
+            for relic in relics_removed:
+                _ = self.relics.index(relic)
+                self.relics.remove(relic)
+
 
     # player's state at a specific act and floor, act starts with 1, floor starts with 1 (Neow)
     def walk_to_act_floor(

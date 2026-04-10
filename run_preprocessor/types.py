@@ -105,11 +105,13 @@ class PlayerStats(TypedDict):
     potion_used: list[str] | None
     potion_discarded: list[str] | None
     relic_choices: list[RelicChoice] | None
+    relics_removed: list[str] | None
     bought_colorless: list[str] | None
     bought_relics: list[str] | None
     bought_potions: list[str] | None
     rest_site_choices: list[str] | None
     upgraded_cards: list[str] | None
+    downgraded_cards: list[str] | None
 
 
 class MapPoint(TypedDict):

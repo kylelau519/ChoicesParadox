@@ -34,6 +34,7 @@ class TestSnapshot(unittest.TestCase):
         snapshot.walk_to_floor(floor=48)
         self.assertEqual(snapshot.deck.get("CARD.THINKING_AHEAD+"), 1)
         self.assertEqual(snapshot.deck.get("CARD.PROLONG+"), 1)
+        self.assertEqual(len(snapshot.relics), 18)
 
 
 if __name__ == "__main__":

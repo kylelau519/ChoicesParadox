@@ -1,6 +1,7 @@
-import os
 import json
-from scraper import STS2RunsScraper
+import os
+
+from .scraper import STS2RunsScraper
 
 
 def main():
@@ -21,8 +22,8 @@ def main():
         character = (
             player["character"].split(".")[-1].lower()
         )  # "CHARACTER.REGENT" -> "regent"
-
-        dir = f"data/runs/{character}/{ascension}"
+        build_id = run["build_id"]
+        dir = f"data/runs/{build_id}/{character}/{ascension}"
         os.makedirs(dir, exist_ok=True)
 
         seed = run["seed"]

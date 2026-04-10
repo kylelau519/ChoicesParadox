@@ -60,41 +60,41 @@ class RawPlayer:
     @classmethod
     def generate_starter_deck(cls, character: Character):
         deck: list[RawCard] = []
+        match character:
+            case Character.DEFECT:
+                deck.append(RawCard(1, "CARD.ZAP", None, 0))
+                deck.append(RawCard(1, "CARD.DUALCAST", None, 0))
+                for _ in range(4):
+                    deck.append(RawCard(1, "CARD.STRIKE_DEFECT", None, 0))
+                    deck.append(RawCard(1, "CARD.DEFEND_DEFECT", None, 0))
 
-        if character == Character.DEFECT:
-            deck.append(RawCard(1, "CARD.ZAP", None, 0))
-            deck.append(RawCard(1, "CARD.DUALCAST", None, 0))
-            for _ in range(4):
-                deck.append(RawCard(1, "CARD.STRIKE_DEFECT", None, 0))
-            for _ in range(4):
-                deck.append(RawCard(1, "CARD.DEFEND_DEFECT", None, 0))
-        elif character == Character.IRONCLAD:
-            deck.append(RawCard(1, "CARD.BASH", None, 0))
-            for _ in range(5):
-                deck.append(RawCard(1, "CARD.STRIKE_IRONCLAD", None, 0))
-            for _ in range(4):
-                deck.append(RawCard(1, "CARD.DEFEND_IRONCLAD", None, 0))
-        elif character == Character.NECROBINDER:
-            deck.append(RawCard(1, "CARD.BODYGUARD", None, 0))
-            deck.append(RawCard(1, "CARD.UNLEASH", None, 0))
-            for _ in range(4):
-                deck.append(RawCard(1, "CARD.STRIKE_NECROBINDER", None, 0))
-            for _ in range(4):
-                deck.append(RawCard(1, "CARD.DEFEND_NECROBINDER", None, 0))
-        elif character == Character.REGENT:
-            deck.append(RawCard(1, "CARD.FALLING_STAR", None, 0))
-            deck.append(RawCard(1, "CARD.VENERATE", None, 0))
-            for _ in range(4):
-                deck.append(RawCard(1, "CARD.STRIKE_REGENT", None, 0))
-            for _ in range(4):
-                deck.append(RawCard(1, "CARD.DEFEND_REGENT", None, 0))
-        elif character == Character.SILENT:
-            deck.append(RawCard(1, "CARD.NEUTRALIZE", None, 0))
-            deck.append(RawCard(1, "CARD.SURVIVOR", None, 0))
-            for _ in range(5):
-                deck.append(RawCard(1, "CARD.STRIKE_SILENT", None, 0))
-            for _ in range(5):
-                deck.append(RawCard(1, "CARD.DEFEND_SILENT", None, 0))
+            case Character.IRONCLAD:
+                deck.append(RawCard(1, "CARD.BASH", None, 0))
+                for _ in range(5):
+                    deck.append(RawCard(1, "CARD.STRIKE_IRONCLAD", None, 0))
+                for _ in range(4):
+                    deck.append(RawCard(1, "CARD.DEFEND_IRONCLAD", None, 0))
+
+            case Character.NECROBINDER:
+                deck.append(RawCard(1, "CARD.BODYGUARD", None, 0))
+                deck.append(RawCard(1, "CARD.UNLEASH", None, 0))
+                for _ in range(4):
+                    deck.append(RawCard(1, "CARD.STRIKE_NECROBINDER", None, 0))
+                    deck.append(RawCard(1, "CARD.DEFEND_NECROBINDER", None, 0))
+
+            case Character.REGENT:
+                deck.append(RawCard(1, "CARD.FALLING_STAR", None, 0))
+                deck.append(RawCard(1, "CARD.VENERATE", None, 0))
+                for _ in range(4):
+                    deck.append(RawCard(1, "CARD.STRIKE_REGENT", None, 0))
+                    deck.append(RawCard(1, "CARD.DEFEND_REGENT", None, 0))
+
+            case Character.SILENT:
+                deck.append(RawCard(1, "CARD.NEUTRALIZE", None, 0))
+                deck.append(RawCard(1, "CARD.SURVIVOR", None, 0))
+                for _ in range(5):
+                    deck.append(RawCard(1, "CARD.STRIKE_SILENT", None, 0))
+                    deck.append(RawCard(1, "CARD.DEFEND_SILENT", None, 0))
 
         return deck
 

@@ -28,27 +28,19 @@ class RelicTracker:
                 for stats in map_point.player_stats:
                     if stats.get("player_id") == player_id:
                         # check if keyword relic_choices is there, if so check if was_picked is true, if so add to relic_history
-                        if "relic_choices" in stats:
-                            for choice in stats["relic_choices"]:
-                                if choice.get("was_picked"):
-                                    self.relic_history.add(choice["choice"])
+                        relic_choices = stats.get("relic_choices") or []
+                        for choice in relic_choices:
+                            if choice.get("was_picked"):
+                                self.relic_history.add(choice["choice"])
 
                         # check if keyword bought_relics is there, if so add all relics in that list to relic_history
-                        if "bought_relics" in stats:
-                            for relic in stats["bought_relics"]:
-                                self.relic_history.add(relic)
+                        bought_relics = stats.get("bought_relics") or []
+                        for relic in bought_relics:
+                            self.relic_history.add(relic)
 
                         # check if keyword relics_removed is there, if so remove that relic from relic_history
-                        if "relics_removed" in stats:
-                            for relic in stats["relics_removed"]:
-                                self.relic_history.discard(relic)
-
-                        if "relic_removed" in stats:
-                            relic = stats["relic_removed"]
-                            if isinstance(relic, list):
-                                for r in relic:
-                                    self.relic_history.discard(r)
-                            else:
-                                self.relic_history.discard(relic)
+                        relics_removed = stats.get("relics_removed") or []
+                        for relic in relics_removed:
+                            self.relic_history.discard(relic)
 
         return sorted(list(self.relic_history))

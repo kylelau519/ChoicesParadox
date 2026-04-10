@@ -54,12 +54,20 @@ class RunToInputConverter:
         return input, target
 
     def walk(self):
-        self.snapshot_now.walk()
-        self.snapshot_next.walk()
+        num_total_floors = len(self.raw_data.map_point_history.flatten())
+        if self.snapshot_now.current_lumpsum_floor < num_total_floors:
+            self.snapshot_now.walk()
+        else:
+            raise Exception("walk: snapshot_now walking too much")
+        if self.snapshot_next.current_lumpsum_floor < num_total_floors:
+            self.snapshot_next.walk()
+        else:
+            print("walk: snapshot_next is at the end of run already")
 
     def run(self):
-        print(len(self.raw_data.map_point_history.flatten()), "floors in total")
-        while self.snapshot_next.current_lumpsum_floor < len(self.raw_data.map_point_history.flatten()):
+        num_total_floors = len(self.raw_data.map_point_history.flatten())
+        print(f"\n{num_total_floors} floors in total\n")
+        while self.snapshot_now.current_lumpsum_floor < num_total_floors:
             print("next_F: ", self.snapshot_next.current_lumpsum_floor)
             if self.snapshot_next.is_encounter():
                 input, target = self.convert_snapshot()

@@ -5,25 +5,6 @@ from enum import Enum
 from run_preprocessor.types import MapPoint, PlayerStats, Room
 
 
-class RoomType(Enum):
-    ELITE = "ELITE"
-    MONSTER = "MONSTER"
-    EVENT = "EVENT"
-    BOSS = "BOSS"
-    SHOP = "SHOP"
-    TREASURE = "TREASURE"
-
-
-@dataclass
-class Encounter:
-    model_id: str
-    monster_ids: list[str]
-
-
-class Event:
-    pass
-
-
 @dataclass
 class RawMapPoint:
     map_point_type: str

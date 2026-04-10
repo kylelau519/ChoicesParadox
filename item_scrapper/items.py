@@ -14,7 +14,10 @@ REGENT_CARDS: dict[str, int] = {}
 SILENT_CARDS: dict[str, int] = {}
 DEFACT_CARDS: dict[str, int] = {}
 
+EVENT_CARDS: dict[str, int] = {}
 CURSE_CARDS: dict[str, int] = {}
+
+ALL_CARDS: dict[str, int] = {}
 
 for card_dict in cards_json:
     if card_dict["color"] == "colorless":
@@ -31,14 +34,16 @@ for card_dict in cards_json:
         DEFACT_CARDS["CARD." + card_dict["id"]] = 0
     elif card_dict["color"] == "curse":
         CURSE_CARDS["CARD." + card_dict["id"]] = 0
+    elif card_dict["color"] == "event":
+        EVENT_CARDS["CARD." + card_dict["id"]] = 0
 
-ALL_CARDS: dict[str, int] = {}
 ALL_CARDS.update(COLORLESS_CARDS)
 ALL_CARDS.update(IRONCLAD_CARDS)
 ALL_CARDS.update(NECROBINDER_CARDS)
 ALL_CARDS.update(REGENT_CARDS)
 ALL_CARDS.update(SILENT_CARDS)
 ALL_CARDS.update(DEFACT_CARDS)
+ALL_CARDS.update(EVENT_CARDS)
 
 upgrades = {}
 for k, v in ALL_CARDS.items():
@@ -46,12 +51,12 @@ for k, v in ALL_CARDS.items():
 ALL_CARDS.update(upgrades)
 ALL_CARDS.update(CURSE_CARDS)
 
-
 ###### ALL relic list ######
-RELICS: list[str] = []
+RELICS: dict[str, int] = {}
 relics_json = json.load(open("item_scrapper/relics.json"))
 for relic_dict in relics_json:
-    RELICS.append("RELIC." + relic_dict["id"])
+    RELICS["RELIC." + relic_dict["id"]] = 0
+    # RELICS.append("RELIC." + relic_dict["id"])
 
 ###### ALL potion dict ######
 potions_json = json.load(open("item_scrapper/potions.json"))
@@ -62,10 +67,10 @@ for potion_dict in potions_json:
 
 ##### ALL encounters list ######
 encounters_json = json.load(open("item_scrapper/encounters.json"))
-ACT1_OVERGROWTH_ENCOUNTERS: list[str] = []
-ACT1_UNDERDOCKS_ENCOUNTERS: list[str] = []
-ACT2_ENCOUNTERS: list[str] = []
-ACT3_ENCOUNTERS: list[str] = []
+ACT1_OVERGROWTH_ENCOUNTERS: dict[str, int] = {}
+ACT1_UNDERDOCKS_ENCOUNTERS: dict[str, int] = {}
+ACT2_ENCOUNTERS: dict[str, int] = {}
+ACT3_ENCOUNTERS: dict[str, int] = {}
 
 ALL_ENCOUNTERS: list[str] = []
 for encounter_dict in encounters_json:
@@ -73,17 +78,17 @@ for encounter_dict in encounters_json:
         encounter_dict["act"] == "Underdocks"
         or encounter_dict["act"] == "Act 1 - Underdocks"
     ):
-        ACT1_UNDERDOCKS_ENCOUNTERS.append("ENCOUNTER." + encounter_dict["id"])
+        ACT1_UNDERDOCKS_ENCOUNTERS["ENCOUNTER." + encounter_dict["id"]] = 0
     elif (
         encounter_dict["act"] == "Overgrowth"
         or encounter_dict["act"] == "Act 1 - Overgrowth"
     ):
-        ACT1_OVERGROWTH_ENCOUNTERS.append("ENCOUNTER." + encounter_dict["id"])
+        ACT1_OVERGROWTH_ENCOUNTERS["ENCOUNTER." + encounter_dict["id"]] = 0
     elif encounter_dict["act"] == "Act 2 - Hive":
-        ACT2_ENCOUNTERS.append("ENCOUNTER." + encounter_dict["id"])
+        ACT2_ENCOUNTERS["ENCOUNTER." + encounter_dict["id"]] = 0
     elif encounter_dict["act"] == "Act 3 - Glory":
-        ACT3_ENCOUNTERS.append("ENCOUNTER." + encounter_dict["id"])
+        ACT3_ENCOUNTERS["ENCOUNTER." + encounter_dict["id"]] = 0
     ALL_ENCOUNTERS.append("ENCOUNTER." + encounter_dict["id"])
 
 if __name__ == "__main__":
-    print("act1 overgrowth encounters: ", ACT1_OVERGROWTH_ENCOUNTERS)
+    print(ACT2_ENCOUNTERS)

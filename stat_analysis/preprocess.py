@@ -5,16 +5,27 @@
 
 # Convert each encounter in a run file to a trainable point
 
+from typing import Any
 from run_preprocessor.reader import RawData
 from run_preprocessor.snapshot import PlayerSnapshot
 
 
 class RunToInputConverter:
-    def __init__(self, run_json, player_id: int = 1):
-        self.raw_data = RawData.from_json(run_json)
-        self.snapshot_now = PlayerSnapshot(self.raw_data, player_id)
-        self.snapshot_next = PlayerSnapshot(self.raw_data, player_id)
+    def __init__(self, run_json: RawData, player_id: int = 1):
+        self.raw_data: RawData = run_json
+        self.snapshot_now: PlayerSnapshot = PlayerSnapshot(self.raw_data, player_id)
+        self.snapshot_next: PlayerSnapshot = PlayerSnapshot(self.raw_data, player_id)
         self.snapshot_next.walk()
+
+    @classmethod
+    def from_file(cls, path: str, player_id: int = 1):
+        raw_data: RawData = RawData.from_file(path)
+        return cls(raw_data, player_id)
+
+    @classmethod
+    def from_json(cls, json: Any, player_id: int = 1):
+        raw_data: RawData = RawData.from_json(json)
+        return cls(raw_data, player_id)
 
     # This assumed snapshot_next is at an encounter, with the damage taken applied
     def convert_snapshot(self):

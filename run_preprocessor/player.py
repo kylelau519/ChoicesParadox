@@ -29,7 +29,7 @@ class Character(Enum):
                 raise ValueError(f"Unknown character: {label}")
 
     def __str__(self):
-        return self.value.split(".")[1].lower()
+        return self.value.lower()
 
 
 # Player is defined in the .run, does not include gold, hp, or potion info.

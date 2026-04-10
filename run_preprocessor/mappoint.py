@@ -31,7 +31,6 @@ class RawMapPoint:
     rooms: list[Room]
     turns_taken: int = 0
 
-    # taking only the relevant dict
     @classmethod
     def from_dict(cls, data: MapPoint) -> "RawMapPoint":
         return cls(
@@ -46,7 +45,6 @@ class RawMapPoint:
 class RawMapPointHistory:
     map_point_history: list[list[RawMapPoint]]  # each act is an element
 
-    # taking list of acts
     @classmethod
     def from_dict(cls, data: list[list[MapPoint]]) -> "RawMapPointHistory":
         map_point_history: list[list[RawMapPoint]] = []

@@ -117,12 +117,16 @@ class PlayerSnapshot:
             for relic in relic_choices:
                 if relic.get("was_picked"):
                     self.relics.append(relic.get("choice"))
+                    if relic == "RELIC.POTION_BELT":
+                        self.max_potion_slot_count += 2
 
         relics_removed = ps.get("relics_removed")
         if relics_removed != None:
             for relic in relics_removed:
                 _ = self.relics.index(relic)
                 self.relics.remove(relic)
+                if relic == "RELIC.POTION_BELT":
+                    self.max_potion_slot_count -= 2
 
 
     # player's state at a specific act and floor, act starts with 1, floor starts with 1 (Neow)

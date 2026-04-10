@@ -29,7 +29,7 @@ class RunToInputConverter:
 
     # This assumed snapshot_next is at an encounter, with the damage taken applied
     def convert_snapshot(self):
-        input = {}
+        input: dict[str, int] = {}
         # Player current stat
         input["current_hp"] = self.snapshot_now.current_hp
         input["max_hp"] = self.snapshot_now.max_hp
@@ -40,7 +40,7 @@ class RunToInputConverter:
         # Ecnounter and the damage taken in the next encounter
         map_point = self.raw_data.map_point_history.flatten()[self.snapshot_next.current_lumpsum_floor - 1]
         rooms = map_point.rooms
-        encounters = {}
+        encounters: dict[str, int] = {}
         for room in rooms:
             model_id = room.get("model_id", "")
             if model_id and model_id.startswith("ENCOUNTER"):
@@ -48,7 +48,7 @@ class RunToInputConverter:
 
         input.update(encounters)
         player_stat = map_point.get_player_stat (self.snapshot_next.player_id)
-        target = {}
+        target: dict[str, int] = {}
         damage_taken = player_stat.get("damage_taken", 0)
         target["damage_taken"] = damage_taken
         return input, target
@@ -75,5 +75,5 @@ if __name__ == "__main__":
 
     with open("testfiles/ironclad_a5_lose.run", "r") as f:
         run_json = json.load(f)
-    converter = RunToInputConverter(run_json)
+    converter = RunToInputConverter.from_json(run_json)
     converter.run()

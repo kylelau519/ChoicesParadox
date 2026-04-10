@@ -140,6 +140,10 @@ class PlayerSnapshot:
 
     def walk(self):
         next_floor = self.current_lumpsum_floor + 1
+        flatten_map = self.data.map_point_history.flatten()
+        if next_floor > len(flatten_map):
+            print("walk: already at the end of run, can't walk anymore")
+            return  # already at the end of the run, can't walk anymore
         mp: RawMapPoint = self.data.map_point_history.flatten()[next_floor - 1]
         player_stat: PlayerStats = mp.get_player_stat(self.player_id)
 

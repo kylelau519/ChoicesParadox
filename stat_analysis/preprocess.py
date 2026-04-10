@@ -36,11 +36,6 @@ class RunToInputConverter:
         raw_data: RawData = RawData.from_file(path)
         return cls(raw_data, player_id)
 
-    @classmethod
-    def from_json(cls, json: Any, player_id: int = 1):
-        raw_data: RawData = RawData.from_json(json)
-        return cls(raw_data, player_id)
-
     # This assumed snapshot_next is at an encounter, with the damage taken applied
     def convert_snapshot(self):
         input: dict[str, int] = {}
@@ -77,8 +72,6 @@ class RunToInputConverter:
             raise Exception("walk: snapshot_now walking too much")
         if self.snapshot_next.current_lumpsum_floor < num_total_floors:
             self.snapshot_next.walk()
-        else:
-            print("walk: snapshot_next is at the end of run already")
 
     def run(self):
         inputs = []
@@ -95,6 +88,8 @@ class RunToInputConverter:
     def vectorize(self):
         master_vec = DictVectorizer(sparse=True).fit([MASTER_SCHEMA])
         inputs, targets = self.run()
+        if len(inputs) == 0:
+            return None, None
         x_run_matrix = master_vec.transform(inputs)
         y_run_array = np.array([t["damage_taken"] for t in targets])
         return x_run_matrix, y_run_array

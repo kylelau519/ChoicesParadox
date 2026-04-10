@@ -1,6 +1,5 @@
 import json
 from dataclasses import dataclass
-from enum import Enum
 
 from run_preprocessor.types import MapPoint, PlayerStats, Room
 
@@ -19,6 +18,14 @@ class RawMapPoint:
             player_stats=data["player_stats"],
             rooms=data["rooms"],
             turns_taken=data["rooms"][0]["turns_taken"],
+        )
+
+    def get_player_stat(self, player_id: int) -> PlayerStats:
+        for ps in self.player_stats:
+            if ps["player_id"] == player_id:
+                return ps
+        raise Exception(
+            f"get_player_stat: player_id {player_id} not found in player_stats"
         )
 
 

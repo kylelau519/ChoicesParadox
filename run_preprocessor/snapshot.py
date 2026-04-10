@@ -46,12 +46,7 @@ class PlayerSnapshot:
             raise Exception("__init__: first floor not found in data")
         first_mp: RawMapPoint = data.map_point_history.map_point_history[0][0]
 
-        player_stat: PlayerStats | None = None
-        for ps in first_mp.player_stats:
-            if ps["player_id"] == player_id:
-                player_stat = ps
-        if player_stat == None:
-            raise Exception("__init__: player not found in map point")
+        player_stat: PlayerStats = first_mp.get_player_stat(player_id)
 
         self.current_hp = player_stat["current_hp"]
         self.max_hp = player_stat["max_hp"]
@@ -146,12 +141,7 @@ class PlayerSnapshot:
     def walk(self):
         next_floor = self.current_lumpsum_floor + 1
         mp: RawMapPoint = self.data.map_point_history.flatten()[next_floor - 1]
-        player_stat: PlayerStats | None = None
-        for ps in mp.player_stats:
-            if ps["player_id"] == self.player_id:
-                player_stat = ps
-        if player_stat == None:
-            raise Exception("walk: player not found in map point")
+        player_stat: PlayerStats = mp.get_player_stat(self.player_id)
 
         self.update_attributes(player_stat)
         self.update_deck(player_stat)

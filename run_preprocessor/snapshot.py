@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from run_preprocessor.deck import Deck
 from run_preprocessor.mappoint import RawMapPoint
 from run_preprocessor.types import PlayerStats
 
@@ -20,7 +21,7 @@ class PlayerSnapshot:
     current_hp: int
     max_hp: int
     current_gold: int
-    deck: dict[str, int]  # card id to count
+    deck: Deck  # card id to count
     max_potion_slot_count: int
     potions: list[str]  # potion ids
     relics: list[str]
@@ -58,11 +59,7 @@ class PlayerSnapshot:
         self.current_gold = player_stat["current_gold"]
 
         starter_deck = RawPlayer.generate_starter_deck(self.character)
-        self.deck = {}
-        for card in starter_deck:
-            prev_num_card = self.deck.get(card.id)
-            new_num_card = prev_num_card + 1 if prev_num_card is not None else 1
-            self.deck[card.id] = new_num_card
+        self.deck = Deck(starter_deck)
         self.potions = []
         self.relics = []
 
@@ -70,13 +67,34 @@ class PlayerSnapshot:
         self.update_potions(player_stat)
         self.update_relics(player_stat)
 
+        self.current_floor += 1
+
     def update_deck(self, ps: PlayerStats):
-        # cards_gained: list[Card] | None
-        # cards_removed: list[Card] | None
-        # cards_transformed: list[CardTransform] | None
-        # upgraded_cards: list[str] | None
-        # bought_colorless: list[str] | None
-        pass
+        cards_gained = ps.get("cards_gained")
+        if cards_gained != None:
+            for card in cards_gained:
+                # TODO: add enchantment logic
+                self.deck.add_card(card)
+
+        cards_removed = ps.get("cards_removed")
+        if cards_removed != None:
+            for card in cards_removed:
+                # TODO: add enchantment logic
+                self.deck.remove_card(card)
+
+        cards_transformed = ps.get("cards_transformed")
+        if cards_transformed != None:
+            for card in cards_transformed:
+                # TODO: add enchantment logic
+                self.deck.remove_card(card["original_card"])
+                self.deck.add_card(card["final_card"])
+
+        cards_upgraded = ps.get("upgraded_cards")
+        if cards_upgraded != None:
+            for id in cards_upgraded:
+                self.deck.remove(id)
+                self.deck.add(f"{id}+")
+        # TODO: downgrade
 
     def update_potions(self, ps: PlayerStats):
         # potion_choices: list[PotionChoice] | None
@@ -91,14 +109,21 @@ class PlayerSnapshot:
         pass
 
     # player's state at a specific act and floor, act starts with 1, floor starts with 1 (Neow)
-    def walk_to_act_floor(self, act: int, floor: int):
-        act_idx = 0
-        floor_idx = 0
-        target_act_idx = act - 1
-        target_floor_idx = floor - 1
+    def walk_to_act_floor(
+        self, from_act: int, from_floor: int, to_act: int, to_floor: int
+    ):
+        act_idx = from_act - 1
+        floor_idx = from_floor - 1
+        to_act_idx = to_act - 1
+        to_floor_idx = to_floor - 1
 
-        while act_idx <= target_act_idx:
-            while floor_idx <= target_floor_idx:
+        while act_idx <= to_act_idx:
+            current_act_len = len(
+                self.data.map_point_history.map_point_history[act_idx]
+            )
+            while (act_idx < to_act_idx and floor_idx < current_act_len) or (
+                floor_idx <= to_floor_idx
+            ):
                 mp: RawMapPoint = self.data.map_point_history.map_point_history[
                     act_idx
                 ][floor_idx]
@@ -117,20 +142,14 @@ class PlayerSnapshot:
                 self.update_potions(player_stat)
                 self.update_relics(player_stat)
 
+                self.current_floor += 1
                 floor_idx += 1
+            floor_idx = 0
             act_idx += 1
-        self.current_floor += 1
 
-    # lump sum floor, start with floor 1 (Neow)
-    def walk_to_floor(self, floor: int):
+    def floor_to_act_floor(self, floor: int):
         if floor < 1:
-            raise Exception("at_floor: floor should be at least 1")
-
-        if floor < self.current_floor:
-            raise Exception("at_floor: can't walk back :)")
-
-        if floor == self.current_floor:
-            return
+            raise Exception("floor_to_act_floor: floor should be at least 1")
 
         num_acts = len(self.data.map_point_history.map_point_history)
         num_floors_a1 = (
@@ -144,7 +163,9 @@ class PlayerSnapshot:
         )
 
         if floor > num_floors_a1 + num_floors_a2 + num_floors_a3:
-            raise Exception("at_floor: floor should be less than total floors")
+            raise Exception(
+                "floor_to_act_floor: floor should be less than total floors"
+            )
 
         act_num = 1
         floor_num = floor
@@ -155,4 +176,25 @@ class PlayerSnapshot:
             act_num += 1
             floor_num -= num_floors_a2
 
-        self.walk_to_act_floor(act=act_num, floor=floor_num)
+        return act_num, floor_num
+
+    # lump sum floor, start with floor 1 (Neow)
+    def walk_to_floor(self, floor: int):
+        if floor < 1:
+            raise Exception("at_floor: floor should be at least 1")
+
+        if floor < self.current_floor:
+            raise Exception("at_floor: can't walk back :)")
+
+        if floor == self.current_floor:
+            return
+
+        from_act_num, from_floor_num = self.floor_to_act_floor(self.current_floor)
+        to_act_num, to_floor_num = self.floor_to_act_floor(floor)
+
+        self.walk_to_act_floor(
+            from_act=from_act_num,
+            from_floor=from_floor_num,
+            to_act=to_act_num,
+            to_floor=to_floor_num,
+        )

@@ -6,8 +6,22 @@
 # Convert each encounter in a run file to a trainable point
 
 from typing import Any
+
+import numpy as np
+import sklearn
+from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, POTIONS, RELICS
 from run_preprocessor.reader import RawData
 from run_preprocessor.snapshot import PlayerSnapshot
+from sklearn.feature_extraction import DictVectorizer
+
+MASTER_SCHEMA = {
+    "current_hp": 0,
+    "max_hp": 0,
+    **ALL_CARDS,
+    **POTIONS,
+    **RELICS,
+    **ALL_ENCOUNTERS,
+}
 
 
 class RunToInputConverter:
@@ -67,26 +81,20 @@ class RunToInputConverter:
             print("walk: snapshot_next is at the end of run already")
 
     def run(self):
+        inputs = []
+        targets = []
         num_total_floors = len(self.raw_data.map_point_history.flatten())
-        print(f"\n{num_total_floors} floors in total\n")
         while self.snapshot_now.current_lumpsum_floor < num_total_floors:
-            print("next_F: ", self.snapshot_next.current_lumpsum_floor)
             if self.snapshot_next.is_encounter():
                 input, target = self.convert_snapshot()
-                print("Encounter at floor", self.snapshot_next.current_lumpsum_floor)
-                print(
-                    "Encounter is ",
-                    [k for k in input.keys() if k.startswith("ENCOUNTER")],
-                )
-                print("Damge taken:", target["damage_taken"])
-                print("")
+                inputs.append(input)
+                targets.append(target)
             self.walk()
+        return inputs, targets
 
-
-if __name__ == "__main__":
-    import json
-
-    with open("testfiles/ironclad_a5_lose.run", "r") as f:
-        run_json = json.load(f)
-    converter = RunToInputConverter.from_json(run_json)
-    converter.run()
+    def vectorize(self):
+        master_vec = DictVectorizer(sparse=True).fit([MASTER_SCHEMA])
+        inputs, targets = self.run()
+        x_run_matrix = master_vec.transform(inputs)
+        y_run_array = np.array([t["damage_taken"] for t in targets])
+        return x_run_matrix, y_run_array

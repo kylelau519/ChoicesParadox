@@ -88,6 +88,14 @@ class TestSnapshot(unittest.TestCase):
         self.assertEqual(snapshot.deck.get("CARD.SEANCE"), 2)
         self.assertEqual(snapshot.deck.get("CARD.PRODUCTION+"), 1)
 
+    def test_walk_back(self):
+        raw_data = RawData.from_file("testfiles/silent_a0_win.run")
+        snapshot = PlayerSnapshot(raw_data)
+
+        snapshot.walk_to_floor(floor=20)
+        with self.assertRaises(Exception):
+            snapshot.walk_to_floor(floor=5)
+
 
 if __name__ == "__main__":
     _ = unittest.main()

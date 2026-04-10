@@ -60,7 +60,9 @@ class RawData:
             if key not in data:
                 raise KeyError(f"Missing required key: {key}")
             if not isinstance(data[key], expected_type):
-                raise TypeError(f"Key '{key}' expected {expected_type}, got {type(data[key])}")
+                raise TypeError(
+                    f"Key '{key}' expected {expected_type}, got {type(data[key])}"
+                )
 
         run_data = cast(RunHistory, data)
         run_metadata = RunMetadata.from_dict(run_data)

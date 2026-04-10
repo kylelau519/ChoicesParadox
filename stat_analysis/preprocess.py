@@ -38,7 +38,9 @@ class RunToInputConverter:
         input.update(self.snapshot_now.relics)
 
         # Ecnounter and the damage taken in the next encounter
-        map_point = self.raw_data.map_point_history.flatten()[self.snapshot_next.current_lumpsum_floor - 1]
+        map_point = self.raw_data.map_point_history.flatten()[
+            self.snapshot_next.current_lumpsum_floor - 1
+        ]
         rooms = map_point.rooms
         encounters: dict[str, int] = {}
         for room in rooms:
@@ -47,7 +49,7 @@ class RunToInputConverter:
                 encounters[model_id] = 1
 
         input.update(encounters)
-        player_stat = map_point.get_player_stat (self.snapshot_next.player_id)
+        player_stat = map_point.get_player_stat(self.snapshot_next.player_id)
         target: dict[str, int] = {}
         damage_taken = player_stat.get("damage_taken", 0)
         target["damage_taken"] = damage_taken
@@ -72,7 +74,10 @@ class RunToInputConverter:
             if self.snapshot_next.is_encounter():
                 input, target = self.convert_snapshot()
                 print("Encounter at floor", self.snapshot_next.current_lumpsum_floor)
-                print("Encounter is ", [k for k in input.keys() if k.startswith("ENCOUNTER")])
+                print(
+                    "Encounter is ",
+                    [k for k in input.keys() if k.startswith("ENCOUNTER")],
+                )
                 print("Damge taken:", target["damage_taken"])
                 print("")
             self.walk()

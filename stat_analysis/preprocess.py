@@ -5,20 +5,31 @@
 
 # Convert each encounter in a run file to a trainable point
 
+from typing import Any
 from run_preprocessor.reader import RawData
 from run_preprocessor.snapshot import PlayerSnapshot
 
 
 class RunToInputConverter:
-    def __init__(self, run_json, player_id: int = 1):
-        self.raw_data = RawData.from_json(run_json)
-        self.snapshot_now = PlayerSnapshot(self.raw_data, player_id)
-        self.snapshot_next = PlayerSnapshot(self.raw_data, player_id)
+    def __init__(self, run_json: RawData, player_id: int = 1):
+        self.raw_data: RawData = run_json
+        self.snapshot_now: PlayerSnapshot = PlayerSnapshot(self.raw_data, player_id)
+        self.snapshot_next: PlayerSnapshot = PlayerSnapshot(self.raw_data, player_id)
         self.snapshot_next.walk()
+
+    @classmethod
+    def from_file(cls, path: str, player_id: int = 1):
+        raw_data: RawData = RawData.from_file(path)
+        return cls(raw_data, player_id)
+
+    @classmethod
+    def from_json(cls, json: Any, player_id: int = 1):
+        raw_data: RawData = RawData.from_json(json)
+        return cls(raw_data, player_id)
 
     # This assumed snapshot_next is at an encounter, with the damage taken applied
     def convert_snapshot(self):
-        input = {}
+        input: dict[str, int] = {}
         # Player current stat
         input["current_hp"] = self.snapshot_now.current_hp
         input["max_hp"] = self.snapshot_now.max_hp
@@ -27,33 +38,46 @@ class RunToInputConverter:
         input.update(self.snapshot_now.relics)
 
         # Ecnounter and the damage taken in the next encounter
-        map_point = self.raw_data.map_point_history.flatten()[self.snapshot_next.current_lumpsum_floor - 1]
+        map_point = self.raw_data.map_point_history.flatten()[
+            self.snapshot_next.current_lumpsum_floor - 1
+        ]
         rooms = map_point.rooms
-        encounters = {}
+        encounters: dict[str, int] = {}
         for room in rooms:
             model_id = room.get("model_id", "")
             if model_id and model_id.startswith("ENCOUNTER"):
                 encounters[model_id] = 1
 
         input.update(encounters)
-        player_stat = map_point.get_player_stat (self.snapshot_next.player_id)
-        target = {}
+        player_stat = map_point.get_player_stat(self.snapshot_next.player_id)
+        target: dict[str, int] = {}
         damage_taken = player_stat.get("damage_taken", 0)
         target["damage_taken"] = damage_taken
         return input, target
 
     def walk(self):
-        self.snapshot_now.walk()
-        self.snapshot_next.walk()
+        num_total_floors = len(self.raw_data.map_point_history.flatten())
+        if self.snapshot_now.current_lumpsum_floor < num_total_floors:
+            self.snapshot_now.walk()
+        else:
+            raise Exception("walk: snapshot_now walking too much")
+        if self.snapshot_next.current_lumpsum_floor < num_total_floors:
+            self.snapshot_next.walk()
+        else:
+            print("walk: snapshot_next is at the end of run already")
 
     def run(self):
-        print(len(self.raw_data.map_point_history.flatten()), "floors in total")
-        while self.snapshot_next.current_lumpsum_floor < len(self.raw_data.map_point_history.flatten()):
+        num_total_floors = len(self.raw_data.map_point_history.flatten())
+        print(f"\n{num_total_floors} floors in total\n")
+        while self.snapshot_now.current_lumpsum_floor < num_total_floors:
             print("next_F: ", self.snapshot_next.current_lumpsum_floor)
             if self.snapshot_next.is_encounter():
                 input, target = self.convert_snapshot()
                 print("Encounter at floor", self.snapshot_next.current_lumpsum_floor)
-                print("Encounter is ", [k for k in input.keys() if k.startswith("ENCOUNTER")])
+                print(
+                    "Encounter is ",
+                    [k for k in input.keys() if k.startswith("ENCOUNTER")],
+                )
                 print("Damge taken:", target["damage_taken"])
                 print("")
             self.walk()
@@ -64,5 +88,5 @@ if __name__ == "__main__":
 
     with open("testfiles/ironclad_a5_lose.run", "r") as f:
         run_json = json.load(f)
-    converter = RunToInputConverter(run_json)
+    converter = RunToInputConverter.from_json(run_json)
     converter.run()

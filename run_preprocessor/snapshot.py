@@ -60,6 +60,8 @@ class PlayerSnapshot:
 
         starter_deck = RawPlayer.generate_starter_deck(self.character)
         self.deck = Deck(starter_deck)
+        if data.run_metadata.ascension >= 5:
+            self.deck.add("CARD.ASCENDERS_BANE")
         self.potions = []
         starter_relic = RawPlayer.generate_starter_relic(self.character)
         self.relics = []
@@ -75,19 +77,19 @@ class PlayerSnapshot:
         cards_gained = ps.get("cards_gained")
         if cards_gained != None:
             for card in cards_gained:
-                # TODO: add enchantment logic
+                # TODO: add enchantmented card logic
                 self.deck.add_card(card)
 
         cards_removed = ps.get("cards_removed")
         if cards_removed != None:
             for card in cards_removed:
-                # TODO: add enchantment logic
+                # TODO: add remove enchantmented card logic
                 self.deck.remove_card(card)
 
         cards_transformed = ps.get("cards_transformed")
         if cards_transformed != None:
             for card in cards_transformed:
-                # TODO: add enchantment logic
+                # TODO: add transform enchantmented card logic
                 self.deck.remove_card(card["original_card"])
                 self.deck.add_card(card["final_card"])
 
@@ -105,11 +107,23 @@ class PlayerSnapshot:
                 self.deck.add(downgraded)
 
     def update_potions(self, ps: PlayerStats):
-        # potion_choices: list[PotionChoice] | None
-        # potion_used: list[str] | None
-        # potion_discarded: list[str] | None
-        # bought_potions: list[str] | None
-        pass
+        potion_choices = ps.get("potion_choices")
+        if potion_choices != None:
+            for potion in potion_choices:
+                if potion["was_picked"]:
+                    self.potions.append(potion["choice"])
+
+        potion_used = ps.get("potion_used")
+        if potion_used != None:
+            for potion in potion_used:
+                _ = self.potions.index(potion)
+                self.potions.remove(potion)
+
+        potion_discarded = ps.get("potion_discarded")
+        if potion_discarded != None:
+            for potion in potion_discarded:
+                _ = self.potions.index(potion)
+                self.potions.remove(potion)
 
     def update_relics(self, ps: PlayerStats):
         relic_choices = ps.get("relic_choices")
@@ -127,7 +141,6 @@ class PlayerSnapshot:
                 self.relics.remove(relic)
                 if relic == "RELIC.POTION_BELT":
                     self.max_potion_slot_count -= 2
-
 
     # player's state at a specific act and floor, act starts with 1, floor starts with 1 (Neow)
     def walk_to_act_floor(

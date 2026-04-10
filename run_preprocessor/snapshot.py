@@ -185,3 +185,14 @@ class PlayerSnapshot:
             act += 1
         self.current_act = act + 1
         self.current_act_floor = floor
+
+    def is_encounter(self):
+        mp: RawMapPoint = self.data.map_point_history.flatten()[
+            self.current_lumpsum_floor - 1
+        ]
+        rooms = mp.rooms
+        for room in rooms:
+            model_id = room.get("model_id", "")
+            if model_id and model_id.startswith("ENCOUNTER"):
+                return True
+        return False

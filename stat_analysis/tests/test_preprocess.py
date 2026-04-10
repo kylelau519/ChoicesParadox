@@ -1,5 +1,7 @@
 import unittest
+from typing import Optional, cast
 
+import numpy as np
 from stat_analysis.preprocess import RunToInputConverter
 
 
@@ -9,11 +11,17 @@ class TestPreprocess(unittest.TestCase):
         inputs, targets = converter.run()
 
     def test_schema_conversion(self):
-        import numpy as np
-
         converter = RunToInputConverter.from_file("testfiles/ironclad_a5_lose.run")
-        x, y = converter.vectorize()
+        x_raw, y_raw = converter.vectorize()
+
         damage_taken_arr = np.array([3, 12, 3, 56, 37, 7])
+
+        self.assertIsNotNone(x_raw)
+        self.assertIsNotNone(y_raw)
+
+        # Use cast to inform type checkers that x and y are no longer Optional after the assertIsNotNone checks
+        x = cast(np.ndarray, x_raw)
+        y = cast(np.ndarray, y_raw)
 
         self.assertEqual(x.shape[0], y.shape[0])
         for i in range(y.shape[0]):

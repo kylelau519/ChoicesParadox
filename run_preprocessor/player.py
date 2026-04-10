@@ -110,21 +110,3 @@ class RawPlayer:
             return "RELIC.DIVINE_RIGHT"
         elif character == Character.SILENT:
             return "RELIC.RING_OF_THE_SNAKE"
-
-
-if __name__ == "__main__":
-    import json
-
-    file = json.load(open("testfiles/ironclad_a5_lose.run", "r"))
-    player_data = file["players"][0]
-    player = RawPlayer.from_dict(player_data)
-    assert player.character == Character.IRONCLAD
-    assert player.relics[0] == {"floor_added_to_deck": 1, "id": "RELIC.BURNING_BLOOD"}
-    assert player.deck[0] == {"floor_added_to_deck": 1, "id": "CARD.STRIKE_IRONCLAD"}
-
-    # relic_file = json.load(open("testfiles/necrobinder_a7_remove_relics.run", "r"))
-    # relics = RelicTracker(
-    #     RawMapPointHistory.from_dict(file["map_point_history"]),
-    #     starting_relics=["RELIC.STARTER_RELIC"],
-    # )
-    # print(relics.track_act_floor(2, 5))

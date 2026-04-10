@@ -52,11 +52,3 @@ class RawMapPointHistory:
 
     def flatten(self) -> list[RawMapPoint]:
         return [mp for act in self.map_point_history for mp in act]
-
-
-if __name__ == "__main__":
-    with open("testfiles/ironclad_a5_lose.run", "r", encoding="utf-8") as f:
-        data = json.load(f)
-    map_point_history = RawMapPointHistory.from_dict(data["map_point_history"])
-    first_node = map_point_history.map_point_history[0][0]
-    assert first_node.map_point_type == "ancient"

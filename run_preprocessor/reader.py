@@ -89,17 +89,3 @@ class RawData:
             _json=data,
             _file_path=file_path,
         )
-
-    def update(self):
-        pass
-
-
-if __name__ == "__main__":
-    raw_data = RawData.from_file("testfiles/ironclad_a5_lose.run")
-    assert raw_data.run_metadata.ascension == 5
-    assert raw_data.run_metadata.game_mode == "standard"
-
-    json_data = json.load(open("testfiles/ironclad_a5_lose.run", "r"))
-    raw_data = RawData.from_json(json_data)
-    assert raw_data.run_metadata.ascension == 5
-    assert raw_data.run_metadata.game_mode == "standard"

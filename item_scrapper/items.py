@@ -72,7 +72,7 @@ ACT1_UNDERDOCKS_ENCOUNTERS: dict[str, int] = {}
 ACT2_ENCOUNTERS: dict[str, int] = {}
 ACT3_ENCOUNTERS: dict[str, int] = {}
 
-ALL_ENCOUNTERS: list[str] = []
+ALL_ENCOUNTERS: dict[str, int] = {}
 for encounter_dict in encounters_json:
     if (
         encounter_dict["act"] == "Underdocks"
@@ -88,7 +88,7 @@ for encounter_dict in encounters_json:
         ACT2_ENCOUNTERS["ENCOUNTER." + encounter_dict["id"]] = 0
     elif encounter_dict["act"] == "Act 3 - Glory":
         ACT3_ENCOUNTERS["ENCOUNTER." + encounter_dict["id"]] = 0
-    ALL_ENCOUNTERS.append("ENCOUNTER." + encounter_dict["id"])
+    ALL_ENCOUNTERS["ENCOUNTER." + encounter_dict["id"]] = 0
 
 if __name__ == "__main__":
     print(ACT2_ENCOUNTERS)

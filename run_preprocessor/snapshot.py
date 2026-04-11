@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 
 from run_preprocessor.deck import Deck
@@ -6,6 +7,9 @@ from run_preprocessor.types import PlayerStats
 
 from .player import Character, RawPlayer
 from .reader import RawData
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 # Player Snapshot is a snapshot of the player's state
@@ -38,15 +42,24 @@ class PlayerSnapshot:
             if p.id == str(player_id):
                 player = p
         if player == None:
+            logger.error(f"Player ID {player_id} not found in run data.")
             raise Exception("__init__: player not found in data")
         self.character = player.character
         self.max_potion_slot_count = 3 if data.run_metadata.ascension < 4 else 2
 
-        if len(data.map_point_history.flatten()) == 0:
+        flattened_history = data.map_point_history.flatten()
+        if len(flattened_history) == 0:
+            logger.error("Run history is empty; cannot create PlayerSnapshot.")
             raise Exception("__init__: first floor not found in data")
         first_mp: RawMapPoint = data.map_point_history.map_point_history[0][0]
 
-        player_stat: PlayerStats = first_mp.get_player_stat(player_id)
+        try:
+            player_stat: PlayerStats = first_mp.get_player_stat(player_id)
+        except Exception as e:
+            logger.error(
+                f"Failed to get player stats for player {player_id} at floor 0: {e}"
+            )
+            raise
 
         self.current_hp = player_stat["current_hp"]
         self.max_hp = player_stat["max_hp"]
@@ -142,7 +155,7 @@ class PlayerSnapshot:
         next_floor = self.current_lumpsum_floor + 1
         flatten_map = self.data.map_point_history.flatten()
         if next_floor > len(flatten_map):
-            print("walk: already at the end of run, can't walk anymore")
+            logging.warning("walk: already at the end of run, can't walk anymore")
             return  # already at the end of the run, can't walk anymore
         mp: RawMapPoint = self.data.map_point_history.flatten()[next_floor - 1]
         player_stat: PlayerStats = mp.get_player_stat(self.player_id)
@@ -157,9 +170,13 @@ class PlayerSnapshot:
     # lump sum floor, start with floor 1 (Neow)
     def walk_to_floor(self, floor: int):
         if floor < 1:
+            logger.error(f"Requested floor {floor} is less than 1.")
             raise Exception("walk_to_floor: floor should be at least 1")
 
         if floor < self.current_lumpsum_floor:
+            logger.error(
+                f"Cannot walk backward from floor {self.current_lumpsum_floor} to {floor}."
+            )
             raise Exception("walk_to_floor: can't walk back :)")
 
         if floor == self.current_lumpsum_floor:
@@ -172,8 +189,14 @@ class PlayerSnapshot:
     def walk_to_act_floor(self, act: int, floor_in_act: int):
         act_num_floors = self.data.map_point_history.act_num_floors
         if act < 1 or act > len(act_num_floors):
+            logger.error(
+                f"Requested act {act} is out of range (1-{len(act_num_floors)})."
+            )
             raise Exception("walk_to_act_floor: act should be between 1 and num acts")
         if floor_in_act < 1 or floor_in_act > act_num_floors[act - 1]:
+            logger.error(
+                f"Requested floor {floor_in_act} is out of range for act {act} (1-{act_num_floors[act - 1]})."
+            )
             raise Exception(
                 "walk_to_act_floor: floor_in_act should be between 1 and num floors in act"
             )

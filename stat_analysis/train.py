@@ -1,9 +1,9 @@
 import os
 
 import joblib
-from stat_analysis.eval import Evaluator
-from stat_analysis.preprocess import LoadRuns
 from xgboost import XGBRegressor
+
+from stat_analysis.preprocess import LoadRuns
 
 
 class Trainer:

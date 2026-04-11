@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import Any, TypedDict
 
 
 class Enchantment(TypedDict):
@@ -137,3 +137,106 @@ class RunHistory(TypedDict):
     starttime: int
     was_abandoned: bool
     win: bool
+
+
+class SaveRooms(TypedDict):
+    ancient_id: str | None
+    boss_encounters_visited: int
+    boss_id: str | None
+    elite_encounter_ids: list[str]
+    elite_encounters_visited: int
+    event_ids: list[str]
+    events_visited: int
+    normal_encounter_ids: list[str]
+    normal_encounters_visited: int
+    second_boss_id: str | None
+
+
+class SaveCoord(TypedDict):
+    col: int
+    row: int
+
+
+class SaveMapPoint(TypedDict):
+    can_modify: bool
+    children: list[SaveCoord]
+    coord: SaveCoord
+    type: str
+
+
+class SaveMapBoss(TypedDict):
+    can_modify: bool
+    coord: SaveCoord
+    type: str
+
+
+class SaveMap(TypedDict):
+    boss: SaveMapBoss
+    height: int
+    points: list[SaveMapPoint]
+
+
+class SaveAct(TypedDict):
+    id: str
+    rooms: SaveRooms
+    saved_map: SaveMap | None
+
+
+class SaveRelicPropsItem(TypedDict):
+    name: str
+    value: int | str | bool
+
+
+class SaveRelicProps(TypedDict):
+    ints: list[SaveRelicPropsItem] | None
+    strings: list[SaveRelicPropsItem] | None
+    bools: list[SaveRelicPropsItem] | None
+
+
+class SaveRelic(TypedDict):
+    id: str
+    floor_added_to_deck: int
+    props: SaveRelicProps | None
+
+
+class SaveRelicGrabBag(TypedDict):
+    relic_id_lists: dict[str, list[str]]
+
+
+class SavePlayerOdds(TypedDict):
+    card_rarity_odds_value: float
+    potion_reward_odds_value: float
+
+
+class SavePlayerRNG(TypedDict):
+    counters: dict[str, int]
+    seed: int
+
+
+class SaveRNG(TypedDict):
+    counters: dict[str, int]
+    seed: str
+
+
+class CurrentSaveHistory(TypedDict):
+    acts: list[SaveAct]
+    ascension: int
+    current_act_index: int
+    events_seen: list[str]
+    extra_fields: dict[str, Any] | None
+    game_mode: str
+    map_drawings: str
+    map_point_history: list[list[MapPoint]]
+    modifiers: list[str]
+    odds: dict[str, Any] | None
+    platform_type: str
+    players: list[Player]
+    pre_finished_room: dict[str, Any] | None
+    rng: SaveRNG
+    run_time: int
+    save_time: int
+    schema_version: int
+    shared_relic_grab_bag: SaveRelicGrabBag
+    start_time: int
+    visited_map_coords: list[SaveCoord]
+    win_time: int | None

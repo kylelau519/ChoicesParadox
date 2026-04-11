@@ -57,7 +57,7 @@ class RawData:
     _file_path: str = ""
 
     @classmethod
-    def from_file(cls, file_path: str):
+    def from_file(cls, file_path: str) -> "RawData":
         logger.info(f"Loading run file: {file_path}")
         try:
             with open(file_path, "r") as f:

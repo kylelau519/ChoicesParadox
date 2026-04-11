@@ -1,15 +1,20 @@
 import logging
 from dataclasses import dataclass
+from typing import Any, Protocol
 
 from run_preprocessor.deck import Deck
-from run_preprocessor.mappoint import RawMapPoint
+from run_preprocessor.mappoint import RawMapPoint, RawMapPointHistory
 from run_preprocessor.types import PlayerStats
 
 from .player import Character, RawPlayer
-from .run_reader import RawData
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class RunDataCommon(Protocol):
+    players: list[RawPlayer]
+    run_metadata: Any  # Must have .ascension
+    map_point_history: RawMapPointHistory
 
 
 # Player Snapshot is a snapshot of the player's state
@@ -17,7 +22,7 @@ logger = logging.getLogger(__name__)
 # This is constructed from reader
 @dataclass
 class PlayerSnapshot:
-    data: RawData
+    data: RunDataCommon
 
     player_id: int
     character: Character
@@ -33,7 +38,7 @@ class PlayerSnapshot:
     current_act: int = 1
     current_lumpsum_floor: int = 1
 
-    def __init__(self, data: RawData, player_id: int = 1):
+    def __init__(self, data: RunDataCommon, player_id: int = 1):
         self.data = data
         self.player_id = player_id
 
@@ -42,7 +47,7 @@ class PlayerSnapshot:
             if p.id == str(player_id):
                 player = p
         if player == None:
-            logger.error(f"Player ID {player_id} not found in run data.")
+            logger.error(f"Player ID {player_id} not found in data.")
             raise Exception("__init__: player not found in data")
         self.character = player.character
         self.max_potion_slot_count = 3 if data.run_metadata.ascension < 4 else 2

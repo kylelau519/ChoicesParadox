@@ -94,7 +94,8 @@ class PlayerSnapshot:
         downgraded_cards = ps.get("downgraded_cards")
         if downgraded_cards != None:
             for id in downgraded_cards:
-                self.deck.remove(id)
+                upgraded = id + "+"
+                self.deck.remove(upgraded)
                 downgraded = id.removesuffix("+")
                 self.deck.add(downgraded)
 

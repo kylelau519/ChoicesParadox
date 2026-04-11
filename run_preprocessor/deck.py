@@ -1,5 +1,9 @@
+import logging
+
 from run_preprocessor.card import RawCard
 from run_preprocessor.types import Card
+
+logger = logging.getLogger(__name__)
 
 
 class Deck:
@@ -7,7 +11,7 @@ class Deck:
         self.cards: dict[str, int] = {}  # card id to count
         for card in cards:
             prev_num_card = self.cards.get(card.id)
-            new_num_card = prev_num_card + 1 if prev_num_card is not None else 1
+            new_num_card = (prev_num_card or 0) + 1
             self.cards[card.id] = new_num_card
 
     def get(self, card_id: str):
@@ -23,6 +27,9 @@ class Deck:
     def remove(self, card_id: str):
         prev_num_card = self.get(card_id)
         if prev_num_card is None or prev_num_card <= 0:
+            logger.error(
+                f"Attempted to remove card {card_id} which does not exist in deck."
+            )
             raise Exception(f"deck.remove tried to remove {card_id} that doesn't exist")
         new_num_card = prev_num_card - 1
         self.cards[card_id] = new_num_card

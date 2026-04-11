@@ -1,8 +1,11 @@
+import logging
 from dataclasses import dataclass
 from enum import Enum
 
 from run_preprocessor.card import RawCard
 from run_preprocessor.types import Player, Potion, Relic
+
+logger = logging.getLogger(__name__)
 
 
 class Character(Enum):
@@ -26,6 +29,7 @@ class Character(Enum):
             case "CHARACTER.NECROBINDER":
                 return Character.NECROBINDER
             case _:
+                logger.error(f"Unknown character label: {label}")
                 raise ValueError(f"Unknown character: {label}")
 
     def __str__(self):
@@ -44,18 +48,25 @@ class RawPlayer:
 
     @classmethod
     def from_dict(cls, data: Player) -> "RawPlayer":
-        deck: list[RawCard] = []
-        for card in data["deck"]:
-            deck.append(RawCard.from_dict(card))
+        try:
+            deck: list[RawCard] = []
+            for card in data["deck"]:
+                deck.append(RawCard.from_dict(card))
 
-        return cls(
-            id=str(data["id"]),
-            character=Character.from_str(data["character"]),
-            deck=deck,
-            max_potion_slot_count=data["max_potion_slot_count"],
-            potions=data["potions"],
-            relics=data["relics"],
-        )
+            return cls(
+                id=str(data["id"]),
+                character=Character.from_str(data["character"]),
+                deck=deck,
+                max_potion_slot_count=data["max_potion_slot_count"],
+                potions=data["potions"],
+                relics=data["relics"],
+            )
+        except KeyError as e:
+            logger.error(f"Missing required player data key: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Error parsing player data: {e}")
+            raise
 
     @classmethod
     def generate_starter_deck(cls, character: Character):

@@ -5,6 +5,7 @@
 
 # Convert each encounter in a run file to a trainable point
 
+import logging
 from typing import Any
 
 import numpy as np
@@ -16,6 +17,9 @@ from run_preprocessor.snapshot import PlayerSnapshot
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 MASTER_SCHEMA = {
     "current_hp": 0,
@@ -72,6 +76,7 @@ class RunToInputConverter:
         if self.snapshot_now.current_lumpsum_floor < num_total_floors:
             self.snapshot_now.walk()
         else:
+            logger.error("Snapshot walk attempt exceeded total floors.")
             raise Exception("walk: snapshot_now walking too much")
         if self.snapshot_next.current_lumpsum_floor < num_total_floors:
             self.snapshot_next.walk()
@@ -118,31 +123,44 @@ class LoadRuns:
 
         for a in self.ascension:
             data_dir = f"{self.data_dir}/{self.build_id}/{self.character}/a{a}/"
-            print(f"Looking for runs in {data_dir}")
             abs_data_dir = os.path.abspath(
                 os.path.join(os.path.dirname(__file__), data_dir)
             )
-            self.runs_path.extend(glob.glob(f"{abs_data_dir}/**/*.run", recursive=True))
-        print(
-            f"Found {len(self.runs_path)} runs for {self.character} ascension {self.ascension} build {self.build_id}"
-        )
+            paths = glob.glob(f"{abs_data_dir}/**/*.run", recursive=True)
+            if not paths:
+                logger.warning(f"No run files found in {abs_data_dir}")
+            self.runs_path.extend(paths)
         return self.runs_path
 
     def get_train_test_set(self, test_size: float = 0.2, random_state: int = 42):
         all_X_matrices = []
         all_y_arrays = []
-        for run in self.get_runs_path():
-            converter = RunToInputConverter.from_file(run)
-            x, y = converter.vectorize()
-            if x is not None and y is not None:
-                all_X_matrices.append(x)
-                all_y_arrays.append(y)
+        runs = self.get_runs_path()
+        if not runs:
+            logger.error("No run files to process.")
+            return None, None, None, None
+
+        for run in runs:
+            logger.info(f"Processing run file: {run}")
+            try:
+                converter = RunToInputConverter.from_file(run)
+                x, y = converter.vectorize()
+                if x is not None and y is not None:
+                    all_X_matrices.append(x)
+                    all_y_arrays.append(y)
+            except Exception as e:
+                logger.error(f"Failed to process run file {run}: {e}")
+                continue
+
+        if not all_X_matrices:
+            logger.error("No valid data extracted from run files.")
+            return None, None, None, None
 
         # 2. Stack into your master dataset
         x_total = sp.vstack(all_X_matrices, format="csr")
         y_total = np.concatenate(all_y_arrays)
 
-        print(x_total.shape, y_total.shape)
+        logger.info(f"Total dataset shape: X={x_total.shape}, y={y_total.shape}")
 
         # shuffled already
         x_train, x_test, y_train, y_test = train_test_split(

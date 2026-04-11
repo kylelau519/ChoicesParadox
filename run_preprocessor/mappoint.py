@@ -1,7 +1,10 @@
 import json
+import logging
 from dataclasses import dataclass
 
 from run_preprocessor.types import MapPoint, PlayerStats, Room
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -13,17 +16,28 @@ class RawMapPoint:
 
     @classmethod
     def from_dict(cls, data: MapPoint) -> "RawMapPoint":
-        return cls(
-            map_point_type=data["map_point_type"],
-            player_stats=data["player_stats"],
-            rooms=data["rooms"],
-            turns_taken=data["rooms"][0]["turns_taken"],
-        )
+        try:
+            if not data["rooms"]:
+                logger.warning("MapPoint has no rooms data.")
+                turns_taken = 0
+            else:
+                turns_taken = data["rooms"][0].get("turns_taken", 0)
+
+            return cls(
+                map_point_type=data["map_point_type"],
+                player_stats=data["player_stats"],
+                rooms=data["rooms"],
+                turns_taken=turns_taken,
+            )
+        except KeyError as e:
+            logger.error(f"Missing required map point data key: {e}")
+            raise
 
     def get_player_stat(self, player_id: int) -> PlayerStats:
         for ps in self.player_stats:
             if ps["player_id"] == player_id:
                 return ps
+        logger.error(f"player_id {player_id} not found in player_stats")
         raise Exception(
             f"get_player_stat: player_id {player_id} not found in player_stats"
         )

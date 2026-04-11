@@ -1,4 +1,8 @@
+import logging
+
 from .mappoint import RawMapPointHistory
+
+logger = logging.getLogger(__name__)
 
 
 class RelicTracker:
@@ -15,6 +19,9 @@ class RelicTracker:
         self.relic_history = set(self.starting_relics)
 
         if act >= len(self.data.map_point_history):
+            logger.warning(
+                f"Requested act {act} is greater than or equal to total acts {len(self.data.map_point_history)}."
+            )
             return sorted(list(self.relic_history))
 
         # iterate over the history:

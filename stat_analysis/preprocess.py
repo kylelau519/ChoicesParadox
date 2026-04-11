@@ -30,6 +30,8 @@ MASTER_SCHEMA = {
     **ALL_ENCOUNTERS,
 }
 
+GLOBAL_VECTORIZER = DictVectorizer(sparse=True).fit([MASTER_SCHEMA])
+
 
 class RunToInputConverter:
     def __init__(self, run_json: RawData, player_id: int = 1):
@@ -94,11 +96,10 @@ class RunToInputConverter:
         return inputs, targets
 
     def vectorize(self):
-        master_vec = DictVectorizer(sparse=True).fit([MASTER_SCHEMA])
         inputs, targets = self.run()
         if len(inputs) == 0:
             return None, None
-        x_run_matrix = master_vec.transform(inputs)
+        x_run_matrix = GLOBAL_VECTORIZER.transform(inputs)
         y_run_array = np.array([t["damage_taken"] for t in targets])
         return x_run_matrix, y_run_array
 

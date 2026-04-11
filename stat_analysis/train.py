@@ -1,0 +1,62 @@
+import os
+
+import joblib
+from stat_analysis.eval import Evaluator
+from stat_analysis.preprocess import LoadRuns
+from xgboost import XGBRegressor
+
+
+class Trainer:
+    def __init__(self, build_id="v0.102.0", character="*", ascension=None):
+        self.build_id = build_id
+        self.character = character
+        self.ascension = ascension or [7, 8, 9, 10]
+        self.model = None
+
+    def load_data(self, test_size=0.2):
+        loader = LoadRuns(self.character, self.ascension, self.build_id)
+        x_train, x_test, y_train, y_test = loader.get_train_test_set(
+            test_size=test_size
+        )
+        return x_train, x_test, y_train, y_test
+
+    def train(self, x_train, y_train, n_estimators=100, max_depth=5, learning_rate=0.1):
+        self.model = XGBRegressor(
+            n_estimators=n_estimators,
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+        )
+        print(
+            f"Training XGBRegressor (estimators={n_estimators}, depth={max_depth})..."
+        )
+        self.model.fit(x_train, y_train)
+        return self.model
+
+    def save_model(self, path="models/xgb_model.joblib"):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        joblib.dump(self.model, path)
+        print(f"Model saved to {path}")
+
+
+def main():
+    trainer = Trainer()
+    x_train, x_test, y_train, y_test = trainer.load_data()
+
+    if x_train is None:
+        print("Error: No data found.")
+        return
+
+    # Train
+    trainer.train(x_train, y_train)
+    model_path = "models/xgb_model.joblib"
+    trainer.save_model(model_path)
+
+    # Evaluate
+    # evaluator = Evaluator(model_path)
+    # evaluator.evaluate(x_train, y_train, label="Training")
+    # evaluator.evaluate(x_test, y_test, label="Test")
+    # evaluator.report_feature_importance()
+
+
+if __name__ == "__main__":
+    main()

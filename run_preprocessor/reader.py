@@ -81,3 +81,75 @@ class RawData:
             _json=data,
             _file_path=file_path,
         )
+
+
+@dataclass
+class ActDetails:
+    id: str
+    ancient_id: str
+    boss_id: str  # not sure about this
+    elite_encounters_ids: list[str]
+    elite_encounters_visited: int
+    event_ids: list[str]
+    event_visited: int
+    normal_encounters_ids: list[str]
+    normal_encounters_visited: int
+    second_boss_id: str = ""
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ActDetails":
+        rooms = data.get("rooms", [])
+        try:
+            return cls(
+                id=data["id"],
+                ancient_id=data["ancient_id"],
+                boss_id=rooms["boss_id"],
+                second_boss_id=rooms.get("second_boss_id", ""),
+                elite_encounters_ids=rooms["elite_encounters_ids"],
+                elite_encounters_visited=rooms["elite_encounters_visited"],
+                event_ids=rooms["event_ids"],
+                event_visited=rooms["event_visited"],
+                normal_encounters_ids=rooms["normal_encounters_ids"],
+                normal_encounters_visited=rooms["normal_encounters_visited"],
+            )
+        except KeyError as e:
+            logger.error(f"Missing required act details key: {e}")
+            raise
+
+
+@dataclass
+class CurrentSaveReader:
+    acts: list[ActDetails]
+    current_act_index: int
+    events_seen: list[str]
+    map_point_history: RawMapPointHistory
+    file_path: str = ""
+
+    @classmethod
+    def from_file(cls, file_path: str) -> "CurrentSaveReader":
+        acts = []
+        logger.info(f"Loading current save file: {file_path}")
+        try:
+            with open(file_path, "r") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError) as e:
+            logger.error(f"Failed to read current save file {file_path}: {e}")
+            raise
+
+        try:
+            for act_data in data["acts"]:
+                acts.append(ActDetails.from_dict(act_data))
+            current_act_index = data["current_act_index"]
+            events_seen = data["events_seen"]
+            map_point_history = RawMapPointHistory.from_dict(data["map_point_history"])
+        except KeyError as e:
+            logger.error(f"Missing required current save data key: {e}")
+            raise
+
+        return cls(
+            acts=acts,
+            current_act_index=current_act_index,
+            events_seen=events_seen,
+            map_point_history=map_point_history,
+            file_path=file_path,
+        )

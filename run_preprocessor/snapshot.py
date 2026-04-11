@@ -98,12 +98,6 @@ class PlayerSnapshot:
                 self.deck.remove_card(card["original_card"])
                 self.deck.add_card(card["final_card"])
 
-        upgraded_cards = ps.get("upgraded_cards")
-        if upgraded_cards != None:
-            for id in upgraded_cards:
-                self.deck.remove(id)
-                self.deck.add(f"{id}+")
-
         downgraded_cards = ps.get("downgraded_cards")
         if downgraded_cards != None:
             for id in downgraded_cards:
@@ -111,6 +105,12 @@ class PlayerSnapshot:
                 self.deck.remove(upgraded)
                 downgraded = id.removesuffix("+")
                 self.deck.add(downgraded)
+
+        upgraded_cards = ps.get("upgraded_cards")
+        if upgraded_cards != None:
+            for id in upgraded_cards:
+                self.deck.remove(id)
+                self.deck.add(f"{id}+")
 
     def update_potions(self, ps: PlayerStats):
         potion_choices = ps.get("potion_choices")

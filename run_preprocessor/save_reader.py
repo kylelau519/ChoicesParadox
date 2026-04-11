@@ -1,0 +1,145 @@
+import json
+import logging
+import os
+import threading
+import time
+from dataclasses import dataclass
+from typing import Callable
+
+from .mappoint import RawMapPointHistory
+
+logger = logging.getLogger(__name__)
+
+from typing import Any
+
+
+@dataclass
+class ActDetails:
+    id: str
+    ancient_id: str
+    boss_id: str  # not sure about this
+    elite_encounter_ids: list[str]
+    elite_encounters_visited: int
+    event_ids: list[str]
+    events_visited: int
+    normal_encounter_ids: list[str]
+    normal_encounters_visited: int
+    second_boss_id: str = ""
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ActDetails":
+        rooms = data.get("rooms", [])
+        try:
+            return cls(
+                id=data["id"],
+                ancient_id=rooms["ancient_id"],
+                boss_id=rooms["boss_id"],
+                second_boss_id=rooms.get("second_boss_id", ""),
+                elite_encounter_ids=rooms["elite_encounter_ids"],
+                elite_encounters_visited=rooms["elite_encounters_visited"],
+                event_ids=rooms["event_ids"],
+                events_visited=rooms["events_visited"],
+                normal_encounter_ids=rooms["normal_encounter_ids"],
+                normal_encounters_visited=rooms["normal_encounters_visited"],
+            )
+        except KeyError as e:
+            logger.error(f"Missing required act details key: {e}")
+            raise
+
+    def next_normal_encounter(self) -> str:
+        return self.normal_encounter_ids[self.normal_encounters_visited]
+
+    def remaining_normal_encounters(self) -> list[str]:
+        return self.normal_encounter_ids[self.normal_encounters_visited :]
+
+    def next_elite(self) -> str:
+        return self.elite_encounter_ids[self.elite_encounters_visited]
+
+    def get_elites(self) -> list[str]:
+        return list(set(self.elite_encounter_ids))
+
+    def boss(self) -> str:
+        return self.boss_id
+
+    def second_boss(self) -> str:
+        return self.second_boss_id
+
+
+@dataclass
+class CurrentSaveReader:
+    acts: list[ActDetails]
+    current_act_index: int
+    events_seen: list[str]
+    map_point_history: RawMapPointHistory
+    file_path: str = ""
+
+    @classmethod
+    def from_file(cls, file_path: str) -> "CurrentSaveReader":
+        acts = []
+        logger.info(f"Loading current save file: {file_path}")
+        try:
+            with open(file_path, "r") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError) as e:
+            logger.error(f"Failed to read current save file {file_path}: {e}")
+            raise
+
+        try:
+            for act_data in data["acts"]:
+                acts.append(ActDetails.from_dict(act_data))
+            current_act_index = data["current_act_index"]
+            events_seen = data["events_seen"]
+            map_point_history = RawMapPointHistory.from_dict(data["map_point_history"])
+        except KeyError as e:
+            logger.error(f"Missing required current save data key: {e}")
+            raise
+
+        return cls(
+            acts=acts,
+            current_act_index=current_act_index,
+            events_seen=events_seen,
+            map_point_history=map_point_history,
+            file_path=file_path,
+        )
+
+
+class SaveFileListener:
+    def __init__(
+        self,
+        file_path: str,
+        callback: Callable[[CurrentSaveReader], None],
+        interval: float = 1.0,
+    ):
+        self.file_path = file_path
+        self.callback = callback
+        self.interval = interval
+        self._stop_event = threading.Event()
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._last_mtime = 0
+
+    def start(self):
+        if not self._thread.is_alive():
+            self._thread.start()
+
+    def stop(self):
+        self._stop_event.set()
+        self._thread.join()
+
+    def _run(self):
+        file_seen = False
+        while not self._stop_event.is_set():
+            try:
+                if os.path.exists(self.file_path):
+                    file_seen = True
+                    current_mtime = os.path.getmtime(self.file_path)
+                    if current_mtime > self._last_mtime:
+                        self._last_mtime = current_mtime
+                        reader = CurrentSaveReader.from_file(self.file_path)
+                        self.callback(reader)
+                elif file_seen:
+                    logger.info("Save file deleted, stopping listener.")
+                    self._stop_event.set()
+                    break
+            except Exception as e:
+                logger.error(f"Error in SaveFileListener: {e}")
+            time.sleep(self.interval)

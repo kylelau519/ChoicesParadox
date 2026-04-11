@@ -1,6 +1,7 @@
 import unittest
 
-from run_preprocessor.reader import RawData
+from run_preprocessor.run_reader import RawData
+
 from run_preprocessor.snapshot import PlayerSnapshot
 
 

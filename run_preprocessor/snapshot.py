@@ -6,7 +6,7 @@ from run_preprocessor.mappoint import RawMapPoint
 from run_preprocessor.types import PlayerStats
 
 from .player import Character, RawPlayer
-from .reader import RawData
+from .run_reader import RawData
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

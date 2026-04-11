@@ -7,7 +7,7 @@ from stat_analysis.preprocess import GLOBAL_VECTORIZER
 
 
 class Evaluator:
-    def __init__(self, model_path: str):
+    def __init__(self, model_path: str, map_point_history: MapPointHistory):
         self.model = joblib.load(model_path)
         self.vectorizer = GLOBAL_VECTORIZER
 
@@ -29,7 +29,7 @@ class Evaluator:
             if importance[i] > 0:
                 print(f"{feature_names[i]}: {importance[i]:.4f}")
 
-    
+
 
     # prob to win the act
     # prob to win against an ecounter

@@ -12,7 +12,7 @@ import numpy as np
 import scipy.sparse as sp
 import sklearn
 from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, POTIONS, RELICS
-from run_preprocessor.reader import RawData
+from run_preprocessor.run_reader import RawData
 from run_preprocessor.snapshot import PlayerSnapshot
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.metrics import mean_absolute_error

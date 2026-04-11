@@ -51,12 +51,6 @@ def main():
     model_path = "models/xgb_model.joblib"
     trainer.save_model(model_path)
 
-    # Evaluate
-    # evaluator = Evaluator(model_path)
-    # evaluator.evaluate(x_train, y_train, label="Training")
-    # evaluator.evaluate(x_test, y_test, label="Test")
-    # evaluator.report_feature_importance()
-
 
 if __name__ == "__main__":
     main()

@@ -12,7 +12,7 @@ IRONCLAD_CARDS: dict[str, int] = {}
 NECROBINDER_CARDS: dict[str, int] = {}
 REGENT_CARDS: dict[str, int] = {}
 SILENT_CARDS: dict[str, int] = {}
-DEFACT_CARDS: dict[str, int] = {}
+DEFECT_CARDS: dict[str, int] = {}
 
 EVENT_CARDS: dict[str, int] = {}
 CURSE_CARDS: dict[str, int] = {}
@@ -31,7 +31,7 @@ for card_dict in cards_json:
     elif card_dict["color"] == "silent":
         SILENT_CARDS["CARD." + card_dict["id"]] = 0
     elif card_dict["color"] == "defact":
-        DEFACT_CARDS["CARD." + card_dict["id"]] = 0
+        DEFECT_CARDS["CARD." + card_dict["id"]] = 0
     elif card_dict["color"] == "curse":
         CURSE_CARDS["CARD." + card_dict["id"]] = 0
     elif card_dict["color"] == "event":
@@ -42,7 +42,7 @@ ALL_CARDS.update(IRONCLAD_CARDS)
 ALL_CARDS.update(NECROBINDER_CARDS)
 ALL_CARDS.update(REGENT_CARDS)
 ALL_CARDS.update(SILENT_CARDS)
-ALL_CARDS.update(DEFACT_CARDS)
+ALL_CARDS.update(DEFECT_CARDS)
 ALL_CARDS.update(EVENT_CARDS)
 
 upgrades = {}

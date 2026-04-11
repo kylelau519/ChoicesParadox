@@ -9,9 +9,14 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-# Your specific path
-with open("save_path.txt", "r") as f:
-    SAVE_PATH = f.read().strip()
+# Load path from environment variable or a local untracked file
+SAVE_PATH = os.getenv("STS_SAVE_PATH")
+if not SAVE_PATH:
+    try:
+        with open("save_path.txt", "r") as f:
+            SAVE_PATH = f.read().strip()
+    except FileNotFoundError:
+        SAVE_PATH = "current_run.save"  # Default fallback
 
 
 def my_callback(reader: CurrentSaveReader):

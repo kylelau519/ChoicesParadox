@@ -65,7 +65,7 @@ class STS2RunsScraper(BaseScraper):
         print(url)
         r = requests.get(url)
         resp = r.json()
-        return resp
+        return resp["run"]
 
     def scrape(self):
         while self.pagination["page"] <= self.pagination["totalPages"]:

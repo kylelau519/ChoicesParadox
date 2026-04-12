@@ -2,8 +2,8 @@ import logging
 from dataclasses import dataclass
 from enum import Enum
 
-from run_preprocessor.card import RawCard
-from run_preprocessor.types import Player, Potion, Relic
+from run_preprocessor.card import Card
+from run_preprocessor.types import Potion, RawPlayer, Relic
 
 logger = logging.getLogger(__name__)
 
@@ -38,23 +38,23 @@ class Character(Enum):
 
 # Player is defined in the .run, does not include gold, hp, or potion info.
 @dataclass
-class RawPlayer:
-    id: str
+class Player:
+    id: int
     character: Character
-    deck: list[RawCard]
+    deck: list[Card]
     max_potion_slot_count: int
     potions: list[Potion]
     relics: list[Relic]
 
     @classmethod
-    def from_dict(cls, data: Player) -> "RawPlayer":
+    def from_dict(cls, data: RawPlayer) -> "Player":
         try:
-            deck: list[RawCard] = []
+            deck: list[Card] = []
             for card in data["deck"]:
-                deck.append(RawCard.from_dict(card))
+                deck.append(Card.from_dict(card))
 
             return cls(
-                id=str(data["id"]),
+                id=data["id"],
                 character=Character.from_str(data["character"]),
                 deck=deck,
                 max_potion_slot_count=data["max_potion_slot_count"],
@@ -70,42 +70,42 @@ class RawPlayer:
 
     @classmethod
     def generate_starter_deck(cls, character: Character):
-        deck: list[RawCard] = []
+        deck: list[Card] = []
         match character:
             case Character.DEFECT:
-                deck.append(RawCard(1, "CARD.ZAP", None, 0))
-                deck.append(RawCard(1, "CARD.DUALCAST", None, 0))
+                deck.append(Card("CARD.ZAP", 0, None))
+                deck.append(Card("CARD.DUALCAST", 0, None))
                 for _ in range(4):
-                    deck.append(RawCard(1, "CARD.STRIKE_DEFECT", None, 0))
-                    deck.append(RawCard(1, "CARD.DEFEND_DEFECT", None, 0))
+                    deck.append(Card("CARD.STRIKE_DEFECT", 0, None))
+                    deck.append(Card("CARD.DEFEND_DEFECT", 0, None))
 
             case Character.IRONCLAD:
-                deck.append(RawCard(1, "CARD.BASH", None, 0))
+                deck.append(Card("CARD.BASH", 0, None))
                 for _ in range(5):
-                    deck.append(RawCard(1, "CARD.STRIKE_IRONCLAD", None, 0))
+                    deck.append(Card("CARD.STRIKE_IRONCLAD", 0, None))
                 for _ in range(4):
-                    deck.append(RawCard(1, "CARD.DEFEND_IRONCLAD", None, 0))
+                    deck.append(Card("CARD.DEFEND_IRONCLAD", 0, None))
 
             case Character.NECROBINDER:
-                deck.append(RawCard(1, "CARD.BODYGUARD", None, 0))
-                deck.append(RawCard(1, "CARD.UNLEASH", None, 0))
+                deck.append(Card("CARD.BODYGUARD", 0, None))
+                deck.append(Card("CARD.UNLEASH", 0, None))
                 for _ in range(4):
-                    deck.append(RawCard(1, "CARD.STRIKE_NECROBINDER", None, 0))
-                    deck.append(RawCard(1, "CARD.DEFEND_NECROBINDER", None, 0))
+                    deck.append(Card("CARD.STRIKE_NECROBINDER", 0, None))
+                    deck.append(Card("CARD.DEFEND_NECROBINDER", 0, None))
 
             case Character.REGENT:
-                deck.append(RawCard(1, "CARD.FALLING_STAR", None, 0))
-                deck.append(RawCard(1, "CARD.VENERATE", None, 0))
+                deck.append(Card("CARD.FALLING_STAR", 0, None))
+                deck.append(Card("CARD.VENERATE", 0, None))
                 for _ in range(4):
-                    deck.append(RawCard(1, "CARD.STRIKE_REGENT", None, 0))
-                    deck.append(RawCard(1, "CARD.DEFEND_REGENT", None, 0))
+                    deck.append(Card("CARD.STRIKE_REGENT", 0, None))
+                    deck.append(Card("CARD.DEFEND_REGENT", 0, None))
 
             case Character.SILENT:
-                deck.append(RawCard(1, "CARD.NEUTRALIZE", None, 0))
-                deck.append(RawCard(1, "CARD.SURVIVOR", None, 0))
+                deck.append(Card("CARD.NEUTRALIZE", 0, None))
+                deck.append(Card("CARD.SURVIVOR", 0, None))
                 for _ in range(5):
-                    deck.append(RawCard(1, "CARD.STRIKE_SILENT", None, 0))
-                    deck.append(RawCard(1, "CARD.DEFEND_SILENT", None, 0))
+                    deck.append(Card("CARD.STRIKE_SILENT", 0, None))
+                    deck.append(Card("CARD.DEFEND_SILENT", 0, None))
 
         return deck
 

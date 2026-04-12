@@ -1,24 +1,22 @@
 import logging
 from dataclasses import dataclass
 
-from run_preprocessor.types import Card, Enchantment
+from run_preprocessor.types import Enchantment, RawCard
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class RawCard:
-    floor_added_to_deck: int
+class Card:
     id: str
-    enchantment: Enchantment | None
     current_upgrade_level: int
+    enchantment: Enchantment | None
 
     @classmethod
-    def from_dict(cls, data: Card) -> "RawCard":
+    def from_dict(cls, data: RawCard) -> "Card":
         try:
             return cls(
                 id=data["id"],
-                floor_added_to_deck=data["floor_added_to_deck"],
                 enchantment=data.get("enchantment"),
                 current_upgrade_level=data.get("current_upgrade_level") or 0,
             )

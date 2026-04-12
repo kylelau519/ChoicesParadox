@@ -1,13 +1,12 @@
 import logging
 
-from run_preprocessor.card import RawCard
-from run_preprocessor.types import Card
+from run_preprocessor.card import Card
 
 logger = logging.getLogger(__name__)
 
 
 class Deck:
-    def __init__(self, cards: list[RawCard]):
+    def __init__(self, cards: list[Card]):
         self.cards: dict[str, int] = {}  # card id to count
         for card in cards:
             prev_num_card = self.cards.get(card.id)
@@ -35,15 +34,15 @@ class Deck:
         self.cards[card_id] = new_num_card
 
     def add_card(self, card: Card):
-        deck_key = card["id"]
-        upgrade_lv = card.get("current_upgrade_level")
+        deck_key = card.id
+        upgrade_lv = card.current_upgrade_level
         if upgrade_lv != None and upgrade_lv == 1:
             deck_key += "+"
         self.add(deck_key)
 
     def remove_card(self, card: Card):
-        deck_key = card["id"]
-        upgrade_lv = card.get("current_upgrade_level")
+        deck_key = card.id
+        upgrade_lv = card.current_upgrade_level
         if upgrade_lv != None and upgrade_lv == 1:
             deck_key += "+"
         self.remove(deck_key)

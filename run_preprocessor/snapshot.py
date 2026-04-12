@@ -2,11 +2,12 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from run_preprocessor.card import Card
 from run_preprocessor.deck import Deck
 from run_preprocessor.mappoint import RawMapPoint, RawMapPointHistory
-from run_preprocessor.types import PlayerStats
+from run_preprocessor.types import RawPlayer, RawPlayerStats
 
-from .player import Character, RawPlayer
+from .player import Character, Player
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +43,10 @@ class PlayerSnapshot:
         self.data = data
         self.player_id = player_id
 
-        player: RawPlayer | None = None
+        player: Player | None = None
         for p in data.players:
-            if p.id == str(player_id):
-                player = p
+            if p["id"] == player_id:
+                player = Player.from_dict(p)
         if player == None:
             logger.error(f"Player ID {player_id} not found in data.")
             raise Exception("__init__: player not found in data")
@@ -59,7 +60,7 @@ class PlayerSnapshot:
         first_mp: RawMapPoint = data.map_point_history.map_point_history[0][0]
 
         try:
-            player_stat: PlayerStats = first_mp.get_player_stat(player_id)
+            player_stat: RawPlayerStats = first_mp.get_player_stat(player_id)
         except Exception as e:
             logger.error(
                 f"Failed to get player stats for player {player_id} at floor 0: {e}"
@@ -70,12 +71,12 @@ class PlayerSnapshot:
         self.max_hp = player_stat["max_hp"]
         self.current_gold = player_stat["current_gold"]
 
-        starter_deck = RawPlayer.generate_starter_deck(self.character)
+        starter_deck = Player.generate_starter_deck(self.character)
         self.deck = Deck(starter_deck)
         if data.run_metadata.ascension >= 5:
             self.deck.add("CARD.ASCENDERS_BANE")
         self.potions = {}
-        starter_relic = RawPlayer.generate_starter_relic(self.character)
+        starter_relic = Player.generate_starter_relic(self.character)
         self.relics = {}
         self.relics[starter_relic] = 1
 
@@ -83,25 +84,25 @@ class PlayerSnapshot:
         self.update_potions(player_stat)
         self.update_relics(player_stat)
 
-    def update_deck(self, ps: PlayerStats):
+    def update_deck(self, ps: RawPlayerStats):
         cards_gained = ps.get("cards_gained")
         if cards_gained != None:
             for card in cards_gained:
                 # TODO: add enchantmented card logic
-                self.deck.add_card(card)
+                self.deck.add_card(Card.from_dict(card))
 
         cards_removed = ps.get("cards_removed")
         if cards_removed != None:
             for card in cards_removed:
                 # TODO: add remove enchantmented card logic
-                self.deck.remove_card(card)
+                self.deck.remove_card(Card.from_dict(card))
 
         cards_transformed = ps.get("cards_transformed")
         if cards_transformed != None:
-            for card in cards_transformed:
+            for transform in cards_transformed:
                 # TODO: add transform enchantmented card logic
-                self.deck.remove_card(card["original_card"])
-                self.deck.add_card(card["final_card"])
+                self.deck.remove_card(Card.from_dict(transform["original_card"]))
+                self.deck.add_card(Card.from_dict(transform["final_card"]))
 
         downgraded_cards = ps.get("downgraded_cards")
         if downgraded_cards != None:
@@ -117,7 +118,7 @@ class PlayerSnapshot:
                 self.deck.remove(id)
                 self.deck.add(f"{id}+")
 
-    def update_potions(self, ps: PlayerStats):
+    def update_potions(self, ps: RawPlayerStats):
         potion_choices = ps.get("potion_choices")
         if potion_choices != None:
             for potion in potion_choices:
@@ -138,7 +139,7 @@ class PlayerSnapshot:
             for potion in potion_discarded:
                 self.potions[potion] = self.potions.get(potion, 0) - 1
 
-    def update_relics(self, ps: PlayerStats):
+    def update_relics(self, ps: RawPlayerStats):
         relic_choices = ps.get("relic_choices")
         if relic_choices != None:
             for relic in relic_choices:
@@ -152,7 +153,7 @@ class PlayerSnapshot:
             for relic in relics_removed:
                 self.relics[relic] = self.relics.get(relic, 0) - 1
 
-    def update_attributes(self, ps: PlayerStats):
+    def update_attributes(self, ps: RawPlayerStats):
         self.current_hp = ps["current_hp"]
         self.max_hp = ps["max_hp"]
         self.current_gold = ps["current_gold"]
@@ -164,7 +165,7 @@ class PlayerSnapshot:
             logging.warning("walk: already at the end of run, can't walk anymore")
             return  # already at the end of the run, can't walk anymore
         mp: RawMapPoint = self.data.map_point_history.flatten()[next_floor - 1]
-        player_stat: PlayerStats = mp.get_player_stat(self.player_id)
+        player_stat: RawPlayerStats = mp.get_player_stat(self.player_id)
 
         self.update_attributes(player_stat)
         self.update_deck(player_stat)

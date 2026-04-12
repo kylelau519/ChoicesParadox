@@ -2,7 +2,7 @@ import json
 import logging
 from dataclasses import dataclass
 
-from run_preprocessor.types import MapPoint, PlayerStats, Room
+from run_preprocessor.types import MapPoint, RawPlayerStats, Room
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RawMapPoint:
     map_point_type: str
-    player_stats: list[PlayerStats]
+    player_stats: list[RawPlayerStats]
     rooms: list[Room]
     turns_taken: int = 0
 
@@ -33,7 +33,7 @@ class RawMapPoint:
             logger.error(f"Missing required map point data key: {e}")
             raise
 
-    def get_player_stat(self, player_id: int) -> PlayerStats:
+    def get_player_stat(self, player_id: int) -> RawPlayerStats:
         for ps in self.player_stats:
             if ps["player_id"] == player_id:
                 return ps

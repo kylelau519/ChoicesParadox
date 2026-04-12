@@ -6,7 +6,7 @@ class Enchantment(TypedDict):
     amount: int
 
 
-class Card(TypedDict):
+class RawCard(TypedDict):
     id: str
     floor_added_to_deck: int
     current_upgrade_level: int | None
@@ -14,8 +14,8 @@ class Card(TypedDict):
 
 
 class CardTransform(TypedDict):
-    final_card: Card
-    original_card: Card
+    final_card: RawCard
+    original_card: RawCard
 
 
 class Relic(TypedDict):
@@ -28,9 +28,9 @@ class Potion(TypedDict):
     slot_index: int
 
 
-class Player(TypedDict):
+class RawPlayer(TypedDict):
     character: str
-    deck: list[Card]
+    deck: list[RawCard]
     id: int
     max_potion_slot_count: int
     potions: list[Potion]
@@ -45,7 +45,7 @@ class Room(TypedDict):
 
 
 class CardChoice(TypedDict):
-    card: Card
+    card: RawCard
     was_picked: bool
 
 
@@ -82,7 +82,7 @@ class PotionChoice(TypedDict):
     was_picked: bool
 
 
-class PlayerStats(TypedDict):
+class RawPlayerStats(TypedDict):
     current_gold: int
     current_hp: int
     damage_taken: int
@@ -98,8 +98,8 @@ class PlayerStats(TypedDict):
     ancient_choice: list[AncientChoice] | None
     event_choices: list[EventChoice] | None
     card_choices: list[CardChoice] | None
-    cards_gained: list[Card] | None
-    cards_removed: list[Card] | None
+    cards_gained: list[RawCard] | None
+    cards_removed: list[RawCard] | None
     cards_transformed: list[CardTransform] | None
     potion_choices: list[PotionChoice] | None
     potion_used: list[str] | None
@@ -116,7 +116,7 @@ class PlayerStats(TypedDict):
 
 class MapPoint(TypedDict):
     map_point_type: str
-    player_stats: list[PlayerStats]
+    player_stats: list[RawPlayerStats]
     rooms: list[Room]
 
 
@@ -130,7 +130,7 @@ class RunHistory(TypedDict):
     map_point_history: list[list[MapPoint]]
     modifiers: list[str]
     platform_type: str
-    players: list[Player]
+    players: list[RawPlayer]
     run_time: int
     schema_version: int
     seed: str
@@ -230,7 +230,7 @@ class CurrentSaveHistory(TypedDict):
     modifiers: list[str]
     odds: dict[str, Any] | None
     platform_type: str
-    players: list[Player]
+    players: list[RawPlayer]
     pre_finished_room: dict[str, Any] | None
     rng: SaveRNG
     run_time: int

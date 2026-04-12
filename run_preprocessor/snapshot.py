@@ -47,16 +47,16 @@ class PlayerSnapshot:
         for p in data.players:
             if p["id"] == player_id:
                 player = Player.from_dict(p)
-        if player == None:
+        if player is None:
             logger.error(f"Player ID {player_id} not found in data.")
-            raise Exception("__init__: player not found in data")
+            raise Exception
         self.character = player.character
         self.max_potion_slot_count = 3 if data.run_metadata.ascension < 4 else 2
 
         flattened_history = data.map_point_history.flatten()
         if len(flattened_history) == 0:
             logger.error("Run history is empty; cannot create PlayerSnapshot.")
-            raise Exception("__init__: first floor not found in data")
+            raise Exception
         first_mp: RawMapPoint = data.map_point_history.map_point_history[0][0]
 
         try:

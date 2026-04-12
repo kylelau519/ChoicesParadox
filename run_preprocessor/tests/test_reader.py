@@ -1,6 +1,7 @@
 import unittest
 
 from run_preprocessor.run_reader import RawData
+from run_preprocessor.save_reader import CurrentSaveReader
 
 
 class TestReader(unittest.TestCase):
@@ -8,6 +9,13 @@ class TestReader(unittest.TestCase):
         raw_data = RawData.from_file("testfiles/silent_a0_win.run")
         self.assertEqual(raw_data.run_metadata.ascension, 0)
         self.assertEqual(raw_data.run_metadata.game_mode, "standard")
+
+    def test_read_save_data_from_file(self):
+        save_reader = CurrentSaveReader.from_file("testfiles/current_run.save")
+        self.assertEqual(save_reader.run_metadata.ascension, 0)
+        self.assertEqual(
+            save_reader.events_seen, ["EVENT.TEA_MASTER", "EVENT.TRASH_HEAP"]
+        )
 
 
 if __name__ == "__main__":

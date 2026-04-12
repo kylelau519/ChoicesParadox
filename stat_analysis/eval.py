@@ -87,21 +87,4 @@ class Evaluator:
         results.sort(key=lambda x: x[1], reverse=True)
         return results[:top_n]
 
-    def expected_damage_taken_against(self, x, encounter_id: str) -> float:
-        encounter_id = f"ENCOUNTER.{encounter_id.lstrip('ENCOUNTER.')}"  # make sure it starts with ENCOUNTER.
-        # Create a feature vector with only the specified encounter
-        feature_vector = np.zeros(len(self.vectorizer.get_feature_names_out()))
-        encounter_index = self.vectorizer.vocabulary_.get(f"{encounter_id}")
-        if encounter_index is not None:
-            feature_vector[encounter_index] = 1
-        else:
-            logger.warning(
-                f"Encounter ID {encounter_id} not found in vectorizer vocabulary."
-            )
-            return 0
-
-        # Predict damage taken using the model
-        predicted_damage = self.predict(feature_vector.reshape(1, -1))
-        return predicted_damage[0]
-
     # Live evaluation methods

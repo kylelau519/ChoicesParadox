@@ -4,6 +4,7 @@ import itertools
 import scipy.sparse as sp
 
 from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, POTIONS, RELICS
+from run_preprocessor.deck import validate_card_id
 from stat_analysis.preprocess import GLOBAL_VECTORIZER, MASTER_SCHEMA, MasterSchema
 
 
@@ -17,6 +18,9 @@ class TestCaseGenerator:
         self.encounter = None
 
     def set_encounter(self, encounter_id: str):
+        encounter_id = encounter_id.strip().upper()
+        if not encounter_id.startswith("ENCOUNTER."):
+            encounter_id = "ENCOUNTER." + encounter_id
         if encounter_id not in ALL_ENCOUNTERS:
             raise ValueError(f"Encounter ID '{encounter_id}' is not valid.")
         self.encounter = {encounter_id: 1}
@@ -28,19 +32,25 @@ class TestCaseGenerator:
         self.max_hp = max_hp
 
     def remove_card(self, card_id: str):
+        # self.deck.remove already handles normalization and validation
         self.deck.remove(card_id)
 
     def add_card(self, card_id: str):
-        if card_id not in ALL_CARDS:
-            raise ValueError(f"Card ID '{card_id}' is not valid.")
+        # self.deck.add already handles normalization and validation
         self.deck.add(card_id)
 
     def add_potion(self, potion_id: str):
+        potion_id = potion_id.strip().upper()
+        if not potion_id.startswith("POTION."):
+            potion_id = "POTION." + potion_id
         if potion_id not in POTIONS:
             raise ValueError(f"Potion ID '{potion_id}' is not valid.")
         self.potions[potion_id] = self.potions.get(potion_id, 0) + 1
 
     def remove_potion(self, potion_id: str):
+        potion_id = potion_id.strip().upper()
+        if not potion_id.startswith("POTION."):
+            potion_id = "POTION." + potion_id
         if self.potions.get(potion_id, 0) <= 0:
             raise ValueError(
                 f"Attempted to use potion '{potion_id}', but none are in inventory."
@@ -48,11 +58,17 @@ class TestCaseGenerator:
         self.potions[potion_id] -= 1
 
     def add_relic(self, relic_id: str):
+        relic_id = relic_id.strip().upper()
+        if not relic_id.startswith("RELIC."):
+            relic_id = "RELIC." + relic_id
         if relic_id not in RELICS:
             raise ValueError(f"Relic ID '{relic_id}' is not valid.")
         self.relics[relic_id] = self.relics.get(relic_id, 0) + 1
 
     def remove_relic(self, relic_id: str):
+        relic_id = relic_id.strip().upper()
+        if not relic_id.startswith("RELIC."):
+            relic_id = "RELIC." + relic_id
         if self.relics.get(relic_id, 0) <= 0:
             raise ValueError(
                 f"Attempted to remove relic '{relic_id}', but none are in inventory."
@@ -125,12 +141,14 @@ class TestCaseGenerator:
         # Generate combinations of adding 0 up to 'pick' cards from the pool
         for r in range(pick + 1):
             for combination in itertools.combinations(card_ids, r):
-                added_labels = [c.replace("CARD.", "") for c in combination]
+                # Normalize card IDs first
+                valid_combination = [validate_card_id(c) for c in combination]
+                added_labels = [c.replace("CARD.", "") for c in valid_combination]
                 label = "Original" if not added_labels else " + ".join(added_labels)
 
                 # Temporarily modify self.deck.cards
                 temp_deck_cards = original_deck_cards.copy()
-                for card_id in combination:
+                for card_id in valid_combination:
                     temp_deck_cards[card_id] = temp_deck_cards.get(card_id, 0) + 1
 
                 self.deck.cards = temp_deck_cards

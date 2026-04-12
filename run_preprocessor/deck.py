@@ -1,22 +1,41 @@
 import logging
 
+from item_scrapper.items import ALL_CARDS
 from run_preprocessor.card import Card
 
 logger = logging.getLogger(__name__)
+
+
+def validate_card_id(card_id: str) -> str:
+    card_id = card_id.strip().upper()
+    if not card_id.startswith("CARD."):
+        card_id = "CARD." + card_id
+    if card_id not in ALL_CARDS:
+        logger.error(f"Invalid card ID: {card_id}")
+        raise ValueError(f"Invalid card ID: {card_id}")
+    return card_id
 
 
 class Deck:
     def __init__(self, cards: list[Card]):
         self.cards: dict[str, int] = {}  # card id to count
         for card in cards:
-            prev_num_card = self.cards.get(card.id)
+            # card.id is usually already formatted like CARD.BASH
+            # but we can validate it just in case
+            card_id = validate_card_id(card.id)
+            prev_num_card = self.cards.get(card_id)
             new_num_card = (prev_num_card or 0) + 1
-            self.cards[card.id] = new_num_card
+            self.cards[card_id] = new_num_card
 
     def get(self, card_id: str):
+        # We don't necessarily want to validate on get, but we can normalize
+        card_id = card_id.strip().upper()
+        if not card_id.startswith("CARD."):
+            card_id = "CARD." + card_id
         return self.cards.get(card_id)
 
     def add(self, card_id: str):
+        card_id = validate_card_id(card_id)
         prev_num_card = self.get(card_id)
         if prev_num_card is None:
             prev_num_card = 0
@@ -24,6 +43,7 @@ class Deck:
         self.cards[card_id] = new_num_card
 
     def remove(self, card_id: str):
+        card_id = validate_card_id(card_id)
         prev_num_card = self.get(card_id)
         if prev_num_card is None or prev_num_card <= 0:
             logger.error(

@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from item_scrapper.items import POTIONS, RELICS
 from run_preprocessor.card import Card
 from run_preprocessor.deck import Deck
 from run_preprocessor.mappoint import RawMapPoint, RawMapPointHistory
@@ -10,6 +11,26 @@ from run_preprocessor.types import RawPlayer, RawPlayerStats
 from .player import Character, Player
 
 logger = logging.getLogger(__name__)
+
+
+def validate_relic_id(relic_id: str) -> str:
+    relic_id = relic_id.strip().upper()
+    if not relic_id.startswith("RELIC."):
+        relic_id = "RELIC." + relic_id
+    if relic_id not in RELICS:
+        logger.error(f"Invalid relic ID: {relic_id}")
+        raise ValueError(f"Invalid relic ID: {relic_id}")
+    return relic_id
+
+
+def validate_potion_id(potion_id: str) -> str:
+    potion_id = potion_id.strip().upper()
+    if not potion_id.startswith("POTION."):
+        potion_id = "POTION." + potion_id
+    if potion_id not in POTIONS:
+        logger.error(f"Invalid potion ID: {potion_id}")
+        raise ValueError(f"Invalid potion ID: {potion_id}")
+    return potion_id
 
 
 class RunDataCommon(Protocol):
@@ -76,7 +97,7 @@ class PlayerSnapshot:
         if data.run_metadata.ascension >= 5:
             self.deck.add("CARD.ASCENDERS_BANE")
         self.potions = {}
-        starter_relic = Player.generate_starter_relic(self.character)
+        starter_relic = validate_relic_id(Player.generate_starter_relic(self.character))
         self.relics = {}
         self.relics[starter_relic] = 1
 
@@ -123,35 +144,36 @@ class PlayerSnapshot:
         if potion_choices is not None:
             for potion in potion_choices:
                 if potion["was_picked"]:
-                    self.potions[potion["choice"]] = (
-                        self.potions.get(potion["choice"], 0) + 1
-                    )
+                    pid = validate_potion_id(potion["choice"])
+                    self.potions[pid] = self.potions.get(pid, 0) + 1
 
         potion_used = ps.get("potion_used")
         if potion_used is not None:
             for potion in potion_used:
-                self.potions[potion] = self.potions.get(potion, 0) - 1
+                pid = validate_potion_id(potion)
+                self.potions[pid] = self.potions.get(pid, 0) - 1
 
                 # TODO: track used potions
 
         potion_discarded = ps.get("potion_discarded")
         if potion_discarded is not None:
             for potion in potion_discarded:
-                self.potions[potion] = self.potions.get(potion, 0) - 1
+                pid = validate_potion_id(potion)
+                self.potions[pid] = self.potions.get(pid, 0) - 1
 
     def update_relics(self, ps: RawPlayerStats):
         relic_choices = ps.get("relic_choices")
         if relic_choices is not None:
             for relic in relic_choices:
                 if relic.get("was_picked"):
-                    self.relics[relic["choice"]] = (
-                        self.relics.get(relic["choice"], 0) + 1
-                    )
+                    rid = validate_relic_id(relic["choice"])
+                    self.relics[rid] = self.relics.get(rid, 0) + 1
 
         relics_removed = ps.get("relics_removed")
         if relics_removed is not None:
             for relic in relics_removed:
-                self.relics[relic] = self.relics.get(relic, 0) - 1
+                rid = validate_relic_id(relic)
+                self.relics[rid] = self.relics.get(rid, 0) - 1
 
     def update_attributes(self, ps: RawPlayerStats):
         self.current_hp = ps["current_hp"]

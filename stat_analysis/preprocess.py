@@ -6,20 +6,31 @@
 # Convert each encounter in a run file to a trainable point
 
 import logging
-from typing import Any
+from typing import Any, Protocol
 
 import numpy as np
 import scipy.sparse as sp
 import sklearn
-from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, POTIONS, RELICS
-from run_preprocessor.run_reader import RawData
-from run_preprocessor.snapshot import PlayerSnapshot
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 
+from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, POTIONS, RELICS
+from run_preprocessor.deck import Deck
+from run_preprocessor.run_reader import RawData
+from run_preprocessor.snapshot import PlayerSnapshot
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class MasterSchema(Protocol):
+    current_hp: int
+    max_hp: int
+    deck: Deck
+    potions: dict[str, int]
+    relics: dict[str, int]
+
 
 MASTER_SCHEMA = {
     "current_hp": 0,

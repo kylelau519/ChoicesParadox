@@ -6,7 +6,6 @@ import time
 from dataclasses import dataclass
 from typing import Callable, cast
 
-from run_preprocessor.player import Player
 from run_preprocessor.types import CurrentSaveHistory, SaveAct, SaveMap
 
 from .mappoint import RawMapPointHistory
@@ -124,7 +123,18 @@ class CurrentSaveReader:
             current_act_index = data["current_act_index"]
             events_seen = data["events_seen"]
             run_metadata = SaveMetadata.from_dict(data)
-            players = [player for player in data["players"]]
+            players = []
+            for player in data["players"]:
+                players.append(
+                    {
+                        "character": player["character_id"],
+                        "deck": player["deck"],
+                        "id": player["net_id"],
+                        "max_potion_slot_count": player["max_potion_slot_count"],
+                        "potions": player["potions"],
+                        "relics": player["relics"],
+                    }
+                )
             map_point_history = RawMapPointHistory.from_dict(data["map_point_history"])
         except KeyError as e:
             logger.error(f"Missing required current save data key: {e}")

@@ -2,6 +2,7 @@ import unittest
 
 from run_preprocessor.run_reader import RawData
 from run_preprocessor.save_reader import CurrentSaveReader
+from run_preprocessor.snapshot import PlayerSnapshot
 
 
 class TestReader(unittest.TestCase):
@@ -16,6 +17,11 @@ class TestReader(unittest.TestCase):
         self.assertEqual(
             save_reader.events_seen, ["EVENT.TEA_MASTER", "EVENT.TRASH_HEAP"]
         )
+
+    def test_save_convert_to_snapshot(self):
+        save_reader = CurrentSaveReader.from_file("testfiles/current_run.save")
+        snapshot = PlayerSnapshot(save_reader)
+        self.assertEqual(str(snapshot.character), "ironclad")
 
 
 if __name__ == "__main__":

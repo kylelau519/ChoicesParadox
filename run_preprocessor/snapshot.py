@@ -86,26 +86,26 @@ class PlayerSnapshot:
 
     def update_deck(self, ps: RawPlayerStats):
         cards_gained = ps.get("cards_gained")
-        if cards_gained != None:
+        if cards_gained is not None:
             for card in cards_gained:
                 # TODO: add enchantmented card logic
                 self.deck.add_card(Card.from_dict(card))
 
         cards_removed = ps.get("cards_removed")
-        if cards_removed != None:
+        if cards_removed is not None:
             for card in cards_removed:
                 # TODO: add remove enchantmented card logic
                 self.deck.remove_card(Card.from_dict(card))
 
         cards_transformed = ps.get("cards_transformed")
-        if cards_transformed != None:
+        if cards_transformed is not None:
             for transform in cards_transformed:
                 # TODO: add transform enchantmented card logic
                 self.deck.remove_card(Card.from_dict(transform["original_card"]))
                 self.deck.add_card(Card.from_dict(transform["final_card"]))
 
         downgraded_cards = ps.get("downgraded_cards")
-        if downgraded_cards != None:
+        if downgraded_cards is not None:
             for id in downgraded_cards:
                 upgraded = id + "+"
                 self.deck.remove(upgraded)
@@ -113,14 +113,14 @@ class PlayerSnapshot:
                 self.deck.add(downgraded)
 
         upgraded_cards = ps.get("upgraded_cards")
-        if upgraded_cards != None:
+        if upgraded_cards is not None:
             for id in upgraded_cards:
                 self.deck.remove(id)
                 self.deck.add(f"{id}+")
 
     def update_potions(self, ps: RawPlayerStats):
         potion_choices = ps.get("potion_choices")
-        if potion_choices != None:
+        if potion_choices is not None:
             for potion in potion_choices:
                 if potion["was_picked"]:
                     self.potions[potion["choice"]] = (
@@ -128,20 +128,20 @@ class PlayerSnapshot:
                     )
 
         potion_used = ps.get("potion_used")
-        if potion_used != None:
+        if potion_used is not None:
             for potion in potion_used:
                 self.potions[potion] = self.potions.get(potion, 0) - 1
 
                 # TODO: track used potions
 
         potion_discarded = ps.get("potion_discarded")
-        if potion_discarded != None:
+        if potion_discarded is not None:
             for potion in potion_discarded:
                 self.potions[potion] = self.potions.get(potion, 0) - 1
 
     def update_relics(self, ps: RawPlayerStats):
         relic_choices = ps.get("relic_choices")
-        if relic_choices != None:
+        if relic_choices is not None:
             for relic in relic_choices:
                 if relic.get("was_picked"):
                     self.relics[relic["choice"]] = (
@@ -149,7 +149,7 @@ class PlayerSnapshot:
                     )
 
         relics_removed = ps.get("relics_removed")
-        if relics_removed != None:
+        if relics_removed is not None:
             for relic in relics_removed:
                 self.relics[relic] = self.relics.get(relic, 0) - 1
 

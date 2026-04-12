@@ -36,13 +36,13 @@ class Deck:
     def add_card(self, card: Card):
         deck_key = card.id
         upgrade_lv = card.current_upgrade_level
-        if upgrade_lv != None and upgrade_lv == 1:
+        if upgrade_lv is not None and upgrade_lv == 1:
             deck_key += "+"
         self.add(deck_key)
 
     def remove_card(self, card: Card):
         deck_key = card.id
         upgrade_lv = card.current_upgrade_level
-        if upgrade_lv != None and upgrade_lv == 1:
+        if upgrade_lv is not None and upgrade_lv == 1:
             deck_key += "+"
         self.remove(deck_key)

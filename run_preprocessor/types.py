@@ -35,6 +35,8 @@ class RawPlayer(TypedDict):
     max_potion_slot_count: int
     potions: list[Potion]
     relics: list[Relic]
+    character_id: str | None
+    net_id: int | None
 
 
 class Room(TypedDict):

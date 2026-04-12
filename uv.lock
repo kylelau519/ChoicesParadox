@@ -2,6 +2,12 @@ version = 1
 revision = 3
 requires-python = ">=3.13"
 
+[manifest]
+members = [
+    "choices-paradox",
+    "run-scrapper",
+]
+
 [[package]]
 name = "certifi"
 version = "2026.2.25"
@@ -69,6 +75,11 @@ wheels = [
 ]
 
 [[package]]
+name = "choices-paradox"
+version = "0.1.0"
+source = { virtual = "." }
+
+[[package]]
 name = "idna"
 version = "3.11"
 source = { registry = "https://pypi.org/simple" }
@@ -95,7 +106,7 @@ wheels = [
 [[package]]
 name = "run-scrapper"
 version = "0.1.0"
-source = { virtual = "." }
+source = { virtual = "run_scrapper" }
 dependencies = [
     { name = "requests" },
 ]

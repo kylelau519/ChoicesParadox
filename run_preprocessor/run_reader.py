@@ -58,17 +58,15 @@ class RawData:
 
     @classmethod
     def from_file(cls, file_path: str) -> "RawData":
-        logger.info(f"Loading run file: {file_path}")
         try:
             with open(file_path, "r") as f:
                 data = cast(RunHistory, json.load(f))
         except (json.JSONDecodeError, FileNotFoundError) as e:
-            logger.error(f"Failed to read run file {file_path}: {e}")
             raise
-
         try:
             run_metadata = RunMetadata.from_dict(data)
-            players = [RawPlayer.from_dict(player) for player in data["players"]]
+            players = [RawPlayer(**player) for player in data["players"]]
+            print(type(players[0]))
             map_point_history = RawMapPointHistory.from_dict(data["map_point_history"])
         except Exception as e:
             logger.error(f"Error parsing run file {file_path}: {e}")

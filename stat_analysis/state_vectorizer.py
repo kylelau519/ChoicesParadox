@@ -1,8 +1,9 @@
 # A helper class to vectorize snapshot and able to modify the state for case study
 import itertools
 
+import scipy.sparse as sp
+
 from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, POTIONS, RELICS
-from run_preprocessor.snapshot import PlayerSnapshot
 from stat_analysis.preprocess import GLOBAL_VECTORIZER, MASTER_SCHEMA, MasterSchema
 
 
@@ -76,15 +77,17 @@ class TestCaseGenerator:
         original_potions = self.potions.copy()
 
         results = []
-        # Generate all combinations of using or not using each potion (0 = not used, 1 = used)
+        labels = []
+        # Generate all combinations of using or not using each potion (0 = stay in inventory, 1 = used/removed)
         for combination in itertools.product([0, 1], repeat=len(potion_ids)):
-            # Create a label for this case
-            used_potions = [
-                potion_ids[i] for i, used in enumerate(combination) if used == 1
+            # Inventory contains potions where combination[i] == 0
+            remaining_potions = [
+                potion_ids[i] for i, used in enumerate(combination) if used == 0
             ]
-            label = "None" if not used_potions else " + ".join(used_potions)
+            remaining_labels = [p.replace("POTION.", "") for p in remaining_potions]
+            label = "None" if not remaining_labels else " + ".join(remaining_labels)
 
-            # Temporarily modify self.potions to reflect the used potions
+            # Temporarily modify self.potions to reflect the remaining potions
             temp_potions = original_potions.copy()
             for i, used in enumerate(combination):
                 if used == 1:
@@ -94,27 +97,46 @@ class TestCaseGenerator:
                         del temp_potions[potion_id]
 
             self.potions = temp_potions
-            results.append((label, self.vectorize()))
+            labels.append(label)
+            results.append(self.vectorize())
 
         self.potions = original_potions  # restore original state
-        return results
+        results = sp.vstack(results)
+        return results, labels
 
     def test_encounters(self, encounters: list[str]):
-        current = self.encounter
+        original_encounter = self.encounter
         results = []
+        labels = []
         for encounter in encounters:
             self.set_encounter(encounter)
-            vectorized_input = self.vectorize()
-            results.append((encounter, vectorized_input))
-        self.encounter = current
-        return results
+            label = encounter.replace("ENCOUNTER.", "")
+            results.append(self.vectorize())
+            labels.append(label)
+        self.encounter = original_encounter  # restore original encounter
+        results = sp.vstack(results)
+        return results, labels
 
-    def test_adding_cards(self, card_ids: list[str]):
-        current_deck = self.deck.cards.copy()
+    def test_adding_cards(self, card_ids: list[str], pick: int = 1):
+        original_deck_cards = self.deck.cards.copy()
         results = []
-        for card_id in card_ids:
-            self.add_card(card_id)
-            vectorized_input = self.vectorize()
-            results.append((f"{card_id}", vectorized_input))
-            self.deck.cards = current_deck.copy()  # restore original deck
-        return results
+        labels = []
+
+        # Generate combinations of adding 0 up to 'pick' cards from the pool
+        for r in range(pick + 1):
+            for combination in itertools.combinations(card_ids, r):
+                added_labels = [c.replace("CARD.", "") for c in combination]
+                label = "Original" if not added_labels else " + ".join(added_labels)
+
+                # Temporarily modify self.deck.cards
+                temp_deck_cards = original_deck_cards.copy()
+                for card_id in combination:
+                    temp_deck_cards[card_id] = temp_deck_cards.get(card_id, 0) + 1
+
+                self.deck.cards = temp_deck_cards
+                labels.append(label)
+                results.append(self.vectorize())
+
+        self.deck.cards = original_deck_cards  # restore
+        results = sp.vstack(results)
+        return results, labels

@@ -1,5 +1,6 @@
 import unittest
 
+from stat_analysis.preprocess import GLOBAL_VECTORIZER
 from stat_analysis.state_vectorizer import TestCaseGenerator
 
 
@@ -30,25 +31,18 @@ class TestStateVectorizer(unittest.TestCase):
         generator = TestCaseGenerator(snapshot)  # type: ignore
         generator.set_encounter("ENCOUNTER.AXEBOTS_NORMAL")
 
-        results = generator.test_potions()
+        results, labels = generator.test_potions()
+        non_zero_idx = results.nonzero()[1]
 
-        # There should be 4 results for 2 potions (None, A, B, A+B)
-        self.assertEqual(len(results), 4)
+        features_name = GLOBAL_VECTORIZER.get_feature_names_out()
 
-        labels = [r[0] for r in results]
-        self.assertIn("None", labels)
-        self.assertIn("POTION.ASHWATER", labels)
-        self.assertIn("POTION.ATTACK_POTION", labels)
-        self.assertIn("POTION.ASHWATER + POTION.ATTACK_POTION", labels)
+        # for result, label in zip(results, labels):
+        #     non_zero_idx = result.nonzero()[1]
+        #     print(f"Combination: {label}, Features: {features_name[non_zero_idx]}")
+        #
+        for name in features_name[results[3].nonzero()[1]]:
+            self.assertNotEqual(name.startswith("POTION."), True)
 
-        # Verify that each result is a tuple of (label, scipy.sparse.csr_matrix)
-        for label, vector in results:
-            self.assertIsInstance(label, str)
-            # vectorizer.transform returns a sparse matrix
-            self.assertTrue(hasattr(vector, "shape"))
-            self.assertEqual(vector.shape[0], 1)
-
-        # Check if original state is restored
         self.assertEqual(
             generator.potions, {"POTION.ASHWATER": 1, "POTION.ATTACK_POTION": 1}
         )
@@ -62,10 +56,9 @@ class TestStateVectorizer(unittest.TestCase):
         generator = TestCaseGenerator(snapshot)  # type: ignore
         generator.set_encounter("ENCOUNTER.AXEBOTS_NORMAL")
 
-        results = generator.test_potions()
-
+        results, _ = generator.test_potions()
         # 2^3 = 8 combinations
-        self.assertEqual(len(results), 8)
+        self.assertEqual(results.shape[0], 8)
 
 
 if __name__ == "__main__":

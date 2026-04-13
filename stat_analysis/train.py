@@ -20,15 +20,9 @@ class Trainer:
         )
         return x_train, x_test, y_train, y_test
 
-    def train(self, x_train, y_train, n_estimators=100, max_depth=5, learning_rate=0.1):
-        self.model = XGBRegressor(
-            n_estimators=n_estimators,
-            max_depth=max_depth,
-            learning_rate=learning_rate,
-        )
-        print(
-            f"Training XGBRegressor (estimators={n_estimators}, depth={max_depth})..."
-        )
+    def train(self, x_train, y_train, **params):
+        self.model = XGBRegressor(**params)
+        print(f"Training XGBRegressor (params={params})...")
         self.model.fit(x_train, y_train)
         return self.model
 
@@ -46,8 +40,19 @@ def main():
         print("Error: No data found.")
         return
 
+    params = {
+        "objective": "reg:squarederror",
+        "eval_metric": "rmse",
+        "max_depth": 8,
+        "colsample_bytree": 0.2,
+        "subsample": 0.8,
+        "min_child_weight": 30,
+        "learning_rate": 0.03,
+        "tree_method": "hist",
+    }
+
     # Train
-    trainer.train(x_train, y_train)
+    trainer.train(x_train, y_train, **params)
     model_path = "models/xgb_model.joblib"
     trainer.save_model(model_path)
 

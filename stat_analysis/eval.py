@@ -3,7 +3,6 @@ import logging
 
 import joblib
 import numpy as np
-
 from item_scrapper.items import *
 from run_preprocessor.save_reader import CurrentSaveReader
 from run_preprocessor.snapshot import PlayerSnapshot
@@ -107,14 +106,14 @@ class Evaluator:
         next_preds = self.predict(next_enc)
         logger.info("Predicted damage for next encounters:")
         for label, pred in zip(enc_labels, next_preds):
-            logger.info(f"  {label}: {pred}")
+            logger.info(f"  {label.lower()}: {pred:.2f}")
         logger.info("")
 
         # Predict damage for remaining encounters
         logger.info("Predicted damage for remaining normal encounters:")
         remaining_preds = self.predict(remaining_enc)
         for label, pred in zip(remaining_labels, remaining_preds):
-            logger.info(f"  {label}: {pred}")
+            logger.info(f"  {label.lower()}: {pred:.2f}")
         logger.info("")
 
         # Predict damage for boss encounter if applicable
@@ -123,5 +122,18 @@ class Evaluator:
         if boss:
             boss_enc, boss_labels = generator.test_encounters([boss])
             boss_pred = self.predict(boss_enc)
-            logger.info(f"Predicted damage for boss encounter {boss}: {boss_pred[0]}")
+            logger.info(f"Predicted damage for boss encounter:")
+            logger.info(
+                f"  {boss.removeprefix('ENCOUNTER.').lower()}: {boss_pred[0]:.2f}"
+            )
+        second_boss = current_act.second_boss()
+        if second_boss:
+            second_boss_enc, second_boss_labels = generator.test_encounters(
+                [second_boss]
+            )
+            second_boss_pred = self.predict(second_boss_enc)
+            logger.info(f"Predicted damage for second boss encounter:")
+            logger.info(
+                f"  {second_boss.removeprefix('ENCOUNTER.').lower()}: {second_boss_pred[0]:.2f}"
+            )
         logger.info("")

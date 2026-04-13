@@ -4,4 +4,4 @@ version = "0.1.0"
 dependencies = []
 
 [tool.uv.workspace]
-members = ["run_scrapper"]
+members = ["run_scrapper", "item_scrapper"]

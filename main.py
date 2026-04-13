@@ -3,7 +3,7 @@ import os
 import readline
 import time
 
-from item_scrapper.items import ALL_CARDS, validate_relic_id
+from item_scrapper.items import ALL_CARDS, RELICS, validate_relic_id
 from run_preprocessor.deck import validate_card_id
 from run_preprocessor.save_reader import CurrentSaveReader, SaveFileListener
 from run_preprocessor.snapshot import PlayerSnapshot
@@ -53,19 +53,19 @@ def callback(file_path: str, eval_obj: Evaluator):
             return
 
         eval_obj.predict_damage_taken(reader)
-        logger.info("Type 'eval' to enter card choices or 'help' for commands.")
+        logger.info("Type 'eval' or 'relic' to enter choices or 'help' for commands.")
         logger.info("=" * 30 + "\n")
     except Exception as e:
         logger.error(f"Error in callback: {e}")
 
 
-class CardCompleter:
-    def __init__(self, card_ids):
-        self.card_ids = sorted(card_ids)
+class IdCompleter:
+    def __init__(self, ids, prefix):
+        self.ids = sorted(ids)
         self.short_ids = sorted(
-            [cid[5:] for cid in self.card_ids if cid.startswith("CARD.")]
+            [cid[len(prefix) :] for cid in self.ids if cid.startswith(prefix)]
         )
-        self.all_options = sorted(list(set(self.card_ids + self.short_ids)))
+        self.all_options = sorted(list(set(self.ids + self.short_ids)))
 
     def complete(self, text, state_idx):
         if state_idx == 0:
@@ -93,7 +93,7 @@ def take_card_choices():
     eval_obj = state.evaluator
 
     # Set up readline for card autocomplete
-    completer = CardCompleter(ALL_CARDS.keys())
+    completer = IdCompleter(ALL_CARDS.keys(), "CARD.")
     readline.set_completer(completer.complete)
     readline.parse_and_bind("tab: complete")
 
@@ -126,61 +126,67 @@ def take_card_choices():
     snapshot = PlayerSnapshot(reader)
     generator = TestCaseGenerator(snapshot)
 
-    # Elite Encounter Prediction
-    generator.set_encounter(current_act.next_elite())
-    elite_cases, elite_labels = generator.test_adding_cards(card_ids)
-    elite_pred = eval_obj.predict(elite_cases)
-
-    # Normal Encounter Prediction
-    generator.set_encounter(current_act.next_normal_encounter())
-    normal_cases, labels = generator.test_adding_cards(card_ids)
-    normal_pred = eval_obj.predict(normal_cases)
-
-    print("\nResults:")
-    for idx, label in enumerate(labels):
-        logger.info(f"Predicted damage taken after taking {label}:")
-        logger.info(
-            f"  {current_act.next_normal_encounter().removeprefix('ENCOUNTER.').lower()}: {normal_pred[idx]:.2f}\t {current_act.next_elite().removeprefix('ENCOUNTER.').lower()}: {elite_pred[idx]:.2f}"
-        )
-        # We use a simple heuristic: sum of damage in next normal and next elite
-        #
-    remaining_combats = list(
-        set(
-            current_act.remaining_normal_encounters()
-            + current_act.remaining_elite_encounters()
-        )
+    remaining_combats = set(
+        current_act.remaining_normal_encounters()
+        + current_act.remaining_elite_encounters()
     )
-    min_dmg = 100000
-    card_dmg_dict = {}
-    suggested_card = "Skip"
-    for combat in remaining_combats:
+    if current_act.boss():
+        remaining_combats.add(current_act.boss())
+    if current_act.second_boss():
+        remaining_combats.add(current_act.second_boss())
+
+    unique_combats = sorted([c for c in remaining_combats if c])
+
+    print(f"\nEvaluating against {len(unique_combats)} unique remaining combats...")
+
+    total_damages = {}  # label -> total_damage
+
+    # Get labels from generator
+    generator.set_encounter(unique_combats[0])
+    _, labels = generator.test_adding_cards(card_ids)
+    for label in labels:
+        total_damages[label] = 0.0
+
+    for combat in unique_combats:
         generator.set_encounter(combat)
         cases, _ = generator.test_adding_cards(card_ids)
         preds = eval_obj.predict(cases)
         for idx, label in enumerate(labels):
-            card_dmg_dict[label] = card_dmg_dict.get(label, 0) + preds[idx]
+            total_damages[label] += preds[idx]
+
+    min_dmg = 1000000
+    suggested_card = "Skip"
+
     logger.info("\nTotal predicted damage for remaining combats with each card choice:")
-    for label, total_dmg in card_dmg_dict.items():
+    for label, total_dmg in total_damages.items():
         logger.info(f"  {label}: {total_dmg:.2f}")
         if total_dmg < min_dmg:
             min_dmg = total_dmg
             suggested_card = label
+
     if suggested_card == "Original":
         suggested_card = "Skip"
+
     logger.info(f"\nSuggested card choice: {suggested_card}")
     print("-----------------------------\n")
 
 
-# confirm when 3 relics choices are out, the map is loaded and map index is right
 def take_relic_choices():
     if not state.reader or not state.evaluator:
         print(
             "No save file loaded. Please wait for the listener to detect a save file."
         )
         return
-    print("\n--- Relic Choice Evaluation ---")
+
     reader = state.reader
     eval_obj = state.evaluator
+
+    # Set up readline for relic autocomplete
+    completer = IdCompleter(RELICS.keys(), "RELIC.")
+    readline.set_completer(completer.complete)
+    readline.parse_and_bind("tab: complete")
+
+    print("\n--- Relic Choice Evaluation ---")
     print("Enter relic choices one by one. Press Enter on an empty line to finish.")
     relic_ids = []
     while True:
@@ -189,49 +195,77 @@ def take_relic_choices():
             relic_id_input = input(prompt).strip()
             if not relic_id_input:
                 break
-            # Similar validation for relics as cards
-            validated_id = validate_relic_id(relic_id_input)
-            relic_ids.append(validated_id)
-        except ValueError:
-            # Error already logged in validate_relic_id
-            continue
+            try:
+                validated_id = validate_relic_id(relic_id_input)
+                relic_ids.append(validated_id)
+            except ValueError:
+                # Error already logged in validate_relic_id
+                continue
         except EOFError:
             break
         except KeyboardInterrupt:
             print("\nCancelled.")
             return
+
+    if not relic_ids:
+        print("No relics entered. Skipping evaluation.")
+        return
+
     current_act = reader.current_act()
     snapshot = PlayerSnapshot(reader)
     generator = TestCaseGenerator(snapshot)
-    suggested_relic = "Should Not See This"
-    min_dmg = 100000
-    relic_dmg_dict = {}
-    remaining_combats = list(
-        set(
-            current_act.remaining_normal_encounters()
-            + current_act.remaining_elite_encounters()
-        )
+
+    remaining_combats = set(
+        current_act.remaining_normal_encounters()
+        + current_act.remaining_elite_encounters()
     )
-    for combat in remaining_combats:
+    if current_act.boss():
+        remaining_combats.add(current_act.boss())
+    if current_act.second_boss():
+        remaining_combats.add(current_act.second_boss())
+
+    unique_combats = sorted([c for c in remaining_combats if c])
+
+    print(f"\nEvaluating against {len(unique_combats)} unique remaining combats...")
+
+    total_damages = {}  # label -> total_damage
+
+    # Get labels from generator
+    generator.set_encounter(unique_combats[0])
+    _, labels = generator.test_adding_relics(relic_ids)
+    for label in labels:
+        total_damages[label] = 0.0
+
+    for combat in unique_combats:
         generator.set_encounter(combat)
         cases, _ = generator.test_adding_relics(relic_ids)
         preds = eval_obj.predict(cases)
-        for idx, label in enumerate(relic_ids):
-            relic_dmg_dict[label] = relic_dmg_dict.get(label, 0) + preds[idx]
+        for idx, label in enumerate(labels):
+            total_damages[label] += preds[idx]
+
+    min_dmg = 1000000
+    suggested_relic = "Skip"
+
     logger.info(
         "\nTotal predicted damage for remaining combats with each relic choice:"
     )
-    for label, total_dmg in relic_dmg_dict.items():
+    for label, total_dmg in total_damages.items():
         logger.info(f"  {label}: {total_dmg:.2f}")
         if total_dmg < min_dmg:
             min_dmg = total_dmg
             suggested_relic = label
+
+    if suggested_relic == "Original":
+        suggested_relic = "Skip"
+
     logger.info(f"\nSuggested relic choice: {suggested_relic}")
+    print("-----------------------------\n")
 
 
 def show_help():
     print("\nAvailable commands:")
     print("  eval   - Enter card choices to evaluate")
+    print("  relic  - Enter relic choices to evaluate")
     print("  help   - Show this help message")
     print("  quit   - Exit the application")
     print("")
@@ -258,7 +292,7 @@ def main():
     try:
         while True:
             # Set up default completer for main commands
-            commands = ["eval", "help", "quit", "exit"]
+            commands = ["eval", "relic", "help", "quit", "exit"]
 
             def cmd_completer(text, state_idx):
                 options = [c for c in commands if c.startswith(text)]
@@ -275,6 +309,8 @@ def main():
                 continue
             if cmd == "eval":
                 take_card_choices()
+            elif cmd == "relic":
+                take_relic_choices()
             elif cmd == "help":
                 show_help()
             elif cmd in ["quit", "exit"]:

@@ -76,8 +76,10 @@ class PlayerSnapshot:
 
         flattened_history = data.map_point_history.flatten()
         if len(flattened_history) == 0:
-            logger.error("Run history is empty; cannot create PlayerSnapshot.")
-            raise Exception
+            logger.warning(
+                "Run history is empty; cannot create PlayerSnapshot. Assuming at Neow."
+            )
+            return self.default()
         first_mp: RawMapPoint = data.map_point_history.map_point_history[0][0]
 
         try:
@@ -97,13 +99,24 @@ class PlayerSnapshot:
         if data.run_metadata.ascension >= 5:
             self.deck.add("CARD.ASCENDERS_BANE")
         self.potions = {}
-        starter_relic = validate_relic_id(Player.generate_starter_relic(self.character))
+        starter_relic = Player.generate_starter_relic(self.character)
         self.relics = {}
         self.relics[starter_relic] = 1
 
         self.update_deck(player_stat)
         self.update_potions(player_stat)
         self.update_relics(player_stat)
+
+    def default(self):
+        self.current_hp = 0
+        self.max_hp = 0
+        self.current_gold = 0
+        self.deck = Deck([])
+        self.potions = {}
+        self.relics = {}
+        self.current_act_floor = 0
+        self.current_act = 1
+        self.current_lumpsum_floor = 0
 
     def update_deck(self, ps: RawPlayerStats):
         cards_gained = ps.get("cards_gained")
@@ -144,36 +157,35 @@ class PlayerSnapshot:
         if potion_choices is not None:
             for potion in potion_choices:
                 if potion["was_picked"]:
-                    pid = validate_potion_id(potion["choice"])
-                    self.potions[pid] = self.potions.get(pid, 0) + 1
+                    self.potions[potion["choice"]] = (
+                        self.potions.get(potion["choice"], 0) + 1
+                    )
 
         potion_used = ps.get("potion_used")
         if potion_used is not None:
             for potion in potion_used:
-                pid = validate_potion_id(potion)
-                self.potions[pid] = self.potions.get(pid, 0) - 1
+                self.potions[potion] = self.potions.get(potion, 0) - 1
 
                 # TODO: track used potions
 
         potion_discarded = ps.get("potion_discarded")
         if potion_discarded is not None:
             for potion in potion_discarded:
-                pid = validate_potion_id(potion)
-                self.potions[pid] = self.potions.get(pid, 0) - 1
+                self.potions[potion] = self.potions.get(potion, 0) - 1
 
     def update_relics(self, ps: RawPlayerStats):
         relic_choices = ps.get("relic_choices")
         if relic_choices is not None:
             for relic in relic_choices:
                 if relic.get("was_picked"):
-                    rid = validate_relic_id(relic["choice"])
-                    self.relics[rid] = self.relics.get(rid, 0) + 1
+                    self.relics[relic["choice"]] = (
+                        self.relics.get(relic["choice"], 0) + 1
+                    )
 
         relics_removed = ps.get("relics_removed")
         if relics_removed is not None:
             for relic in relics_removed:
-                rid = validate_relic_id(relic)
-                self.relics[rid] = self.relics.get(rid, 0) - 1
+                self.relics[relic] = self.relics.get(relic, 0) - 1
 
     def update_attributes(self, ps: RawPlayerStats):
         self.current_hp = ps["current_hp"]

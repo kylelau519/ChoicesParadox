@@ -5,7 +5,10 @@ import joblib
 import numpy as np
 
 from item_scrapper.items import *
+from run_preprocessor.save_reader import CurrentSaveReader
+from run_preprocessor.snapshot import PlayerSnapshot
 from stat_analysis.preprocess import GLOBAL_VECTORIZER
+from stat_analysis.state_vectorizer import TestCaseGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -88,3 +91,37 @@ class Evaluator:
         return results[:top_n]
 
     # Live evaluation methods
+    def predict_damage_taken(self, current_save: CurrentSaveReader):
+        current_act = current_save.current_act()
+        snapshot = PlayerSnapshot(current_save)
+        generator = TestCaseGenerator(snapshot)
+        next_normal = current_act.next_normal_encounter()
+        next_elite = current_act.next_elite()
+        next_enc, enc_labels = generator.test_encounters([next_normal, next_elite])
+
+        remaining_enc, remaining_labels = generator.test_encounters(
+            current_act.remaining_normal_encounters()
+        )
+
+        # Predict damage for next encounters
+        next_preds = self.predict(next_enc)
+        logger.info("Predicted damage for next encounters:")
+        for label, pred in zip(enc_labels, next_preds):
+            logger.info(f"  {label}: {pred}")
+        logger.info("")
+
+        # Predict damage for remaining encounters
+        logger.info("Predicted damage for remaining normal encounters:")
+        remaining_preds = self.predict(remaining_enc)
+        for label, pred in zip(remaining_labels, remaining_preds):
+            logger.info(f"  {label}: {pred}")
+        logger.info("")
+
+        # Predict damage for boss encounter if applicable
+        boss = current_act.boss()
+        generator.test_encounters([boss] if boss else [])
+        if boss:
+            boss_enc, boss_labels = generator.test_encounters([boss])
+            boss_pred = self.predict(boss_enc)
+            logger.info(f"Predicted damage for boss encounter {boss}: {boss_pred[0]}")
+        logger.info("")

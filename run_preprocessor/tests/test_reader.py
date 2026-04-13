@@ -23,6 +23,11 @@ class TestReader(unittest.TestCase):
         snapshot = PlayerSnapshot(save_reader)
         self.assertEqual(str(snapshot.character), "ironclad")
 
+    def test_early_save(self):
+        # no error = ok
+        save_reader = CurrentSaveReader.from_file("testfiles/early_run.save")
+        _ = PlayerSnapshot(save_reader)
+
 
 if __name__ == "__main__":
     _ = unittest.main()

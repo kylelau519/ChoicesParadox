@@ -9437,7 +9437,7 @@
     "type": "Attack",
     "rarity": "Uncommon",
     "target": "AnyEnemy",
-    "color": "unknown",
+    "color": "ironclad",
     "damage": 7,
     "block": null,
     "hit_count": null,

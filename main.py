@@ -2,9 +2,11 @@ import logging
 import os
 import time
 
+from run_preprocessor.deck import validate_card_id
 from run_preprocessor.save_reader import CurrentSaveReader, SaveFileListener
 from run_preprocessor.snapshot import PlayerSnapshot
 from stat_analysis.eval import Evaluator
+from stat_analysis.state_vectorizer import TestCaseGenerator
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -36,7 +38,48 @@ def callback(file_path: str, eval: Evaluator):
         f"Current Act: {snapshot.current_act} at floor {snapshot.current_act_floor}"
     )
     eval.predict_damage_taken(reader)
+    take_card_choices(reader, eval)
     logger.info("=" * 30 + "\n")
+
+
+def take_card_choices(reader: CurrentSaveReader, eval: Evaluator):
+    card_choices_input = input(
+        "Enter card choices (comma separated, or Enter to skip): "
+    )
+    card_ids = []
+    for card_id in card_choices_input.split(","):
+        card_id = card_id.strip()
+        try:
+            validate_card_id(card_id)
+            card_ids.append(card_id)
+        except ValueError as e:
+            logger.error(f"Invalid card ID '{card_id}': {e}")
+            continue
+    current_act = reader.current_act()
+    snapshot = PlayerSnapshot(reader)
+    generator = TestCaseGenerator(snapshot)
+
+    generator.set_encounter(current_act.next_elite())
+    elite_cases, elite_labels = generator.test_adding_cards(card_ids)
+    elite_perd = eval.predict(elite_cases)
+
+    generator.set_encounter(current_act.next_normal_encounter())
+    normal_cases, labels = generator.test_adding_cards(card_ids)
+    normal_pred = eval.predict(normal_cases)
+    min_damage = 100000
+    suggested_card = "Skip"
+    for idx, label in enumerate(labels):
+        logger.info(f"Predicted damage taken after taking {label}")
+        logger.info(
+            f"{current_act.next_normal_encounter()}: {normal_pred[idx]}\t {current_act.next_elite()}: {elite_perd[idx]}"
+        )
+        if min_damage > normal_pred[idx] + elite_perd[idx]:
+            min_damage = normal_pred[idx] + elite_perd[idx]
+            suggested_card = label
+    logger.info("")
+    logger.info(f"Suggested card choice: {suggested_card}")
+
+    logger.info("")
 
 
 def main():

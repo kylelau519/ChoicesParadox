@@ -43,10 +43,10 @@ def main():
     params = {
         "objective": "reg:squarederror",
         "eval_metric": "rmse",
-        "max_depth": 8,
+        "max_depth": 10,
+        "n_estimators": 6000,
         "colsample_bytree": 0.2,
         "subsample": 0.8,
-        "min_child_weight": 30,
         "learning_rate": 0.03,
         "tree_method": "hist",
     }

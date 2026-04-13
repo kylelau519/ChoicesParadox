@@ -153,7 +153,7 @@ def take_card_choices():
 
     for combat in unique_combats:
         generator.set_encounter(combat)
-        cases, _ = generator.test_adding_cards(card_ids)
+        cases, labels = generator.test_adding_cards(card_ids)
         preds = eval_obj.predict(cases)
         for idx, label in enumerate(labels):
             total_damages[label] += preds[idx]
@@ -305,7 +305,11 @@ def take_removal_choices():
     total_damages = {}  # label -> total_damage
 
     # Labels: "Original" + "Removed CardName"
-    labels = ["Original"] + [f"Removed {c.replace('CARD.', '')}" for c in deck_cards]
+    labels = ["Original"] + [
+        f"Removed {c.replace('CARD.', '')}"
+        for c in deck_cards
+        if snapshot.deck.cards.get(c, 0) > 0
+    ]
     for label in labels:
         total_damages[label] = 0.0
 
@@ -318,10 +322,11 @@ def take_removal_choices():
 
         # Damage for each removal
         for card_id in deck_cards:
+            if snapshot.deck.cards.get(card_id, 0) == 0:
+                continue  # Skip if card is not in deck (shouldn't happen but just in case)
             case, label = generator.test_remove_card(card_id)
             total_damages[label] += eval_obj.predict(case)[0]
 
-    min_dmg = 1000000
     suggested_removal = "None"
 
     # Sort removals by total damage (ascending)
@@ -383,6 +388,8 @@ def take_upgrade_choices():
 
     valid_upgrades = []
     for card_id in deck_cards:
+        if snapshot.deck.cards.get(card_id, 0) == 0 or card_id.endswith("+"):
+            continue  # Skip if card is not in deck (shouldn't happen but just in case)
         if not card_id.endswith("+"):
             valid_upgrades.append(card_id)
             label = f"Upgraded {card_id.replace('CARD.', '')}"
@@ -401,6 +408,8 @@ def take_upgrade_choices():
 
         # Damage for each upgrade
         for card_id in valid_upgrades:
+            if snapshot.deck.cards.get(card_id, 0) == 0 or card_id.endswith("+"):
+                continue  # Skip if card is not in deck (shouldn't happen but just in case)
             case, label = generator.test_upgrade_card(card_id)
             if case is not None:
                 total_damages[label] += eval_obj.predict(case)[0]

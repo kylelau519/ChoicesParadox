@@ -2,7 +2,6 @@
 import itertools
 
 import scipy.sparse as sp
-
 from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, POTIONS, RELICS
 from run_preprocessor.deck import validate_card_id
 from stat_analysis.preprocess import GLOBAL_VECTORIZER, MASTER_SCHEMA, MasterSchema
@@ -156,5 +155,37 @@ class TestCaseGenerator:
                 results.append(self.vectorize())
 
         self.deck.cards = original_deck_cards  # restore
+        results = sp.vstack(results)
+        return results, labels
+
+    def test_adding_relics(self, relic_ids: list[str], pick: int = 1):
+        original_relics = self.relics.copy()
+        results = []
+        labels = []
+
+        # Generate combinations of adding 0 up to 'pick' relics from the pool
+        for r in range(pick + 1):
+            for combination in itertools.combinations(relic_ids, r):
+                valid_combination = [c.strip().upper() for c in combination]
+                valid_combination = [
+                    f"RELIC.{c}" if not c.startswith("RELIC.") else c
+                    for c in valid_combination
+                ]
+                for relic_id in valid_combination:
+                    if relic_id not in RELICS:
+                        raise ValueError(f"Relic ID '{relic_id}' is not valid.")
+                added_labels = [c.replace("RELIC.", "") for c in valid_combination]
+                label = "Original" if not added_labels else " + ".join(added_labels)
+
+                # Temporarily modify self.relics
+                temp_relics = original_relics.copy()
+                for relic_id in valid_combination:
+                    temp_relics[relic_id] = temp_relics.get(relic_id, 0) + 1
+
+                self.relics = temp_relics
+                labels.append(label)
+                results.append(self.vectorize())
+
+        self.relics = original_relics  # restore
         results = sp.vstack(results)
         return results, labels

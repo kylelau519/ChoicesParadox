@@ -1,9 +1,14 @@
+import logging
 import os
 
 import joblib
+from stat_analysis.preprocess import GLOBAL_VECTORIZER, LoadRuns
 from xgboost import XGBRegressor
 
-from stat_analysis.preprocess import LoadRuns
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 
 class Trainer:
@@ -33,15 +38,20 @@ class Trainer:
 
 
 def main():
-    trainer = Trainer()
+    trainer = Trainer(ascension=[3, 4, 5, 6, 7, 8, 9, 10])
     x_train, x_test, y_train, y_test = trainer.load_data()
+
+    for i in range(5):
+        logger.debug(
+            f"Sample {i} - X: {GLOBAL_VECTORIZER.inverse_transform(x_train[i : i + 1])}, y: {y_train[i]}"
+        )
 
     if x_train is None:
         print("Error: No data found.")
         return
 
     params = {
-        "objective": "reg:squarederror",
+        "objective": "reg:tweedie",
         "eval_metric": "rmse",
         "max_depth": 10,
         "n_estimators": 6000,

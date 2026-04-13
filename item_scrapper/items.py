@@ -17,6 +17,8 @@ DEFECT_CARDS: dict[str, int] = {}
 EVENT_CARDS: dict[str, int] = {}
 CURSE_CARDS: dict[str, int] = {}
 
+QUEST_CARDS: dict[str, int] = {}
+
 ALL_CARDS: dict[str, int] = {}
 
 for card_dict in cards_json:
@@ -30,12 +32,15 @@ for card_dict in cards_json:
         REGENT_CARDS["CARD." + card_dict["id"]] = 0
     elif card_dict["color"] == "silent":
         SILENT_CARDS["CARD." + card_dict["id"]] = 0
-    elif card_dict["color"] == "defact":
+    elif card_dict["color"] == "defect":
         DEFECT_CARDS["CARD." + card_dict["id"]] = 0
     elif card_dict["color"] == "curse":
         CURSE_CARDS["CARD." + card_dict["id"]] = 0
     elif card_dict["color"] == "event":
         EVENT_CARDS["CARD." + card_dict["id"]] = 0
+    elif card_dict["color"] == "quest":
+        QUEST_CARDS["CARD." + card_dict["id"]] = 0
+
 
 ALL_CARDS.update(COLORLESS_CARDS)
 ALL_CARDS.update(IRONCLAD_CARDS)
@@ -50,6 +55,7 @@ for k, v in ALL_CARDS.items():
     upgrades.update({f"{k}+": 0})
 ALL_CARDS.update(upgrades)
 ALL_CARDS.update(CURSE_CARDS)
+ALL_CARDS.update(QUEST_CARDS)
 
 ###### ALL relic list ######
 RELICS: dict[str, int] = {}

@@ -43,7 +43,7 @@ class Evaluator:
         char_card_maps = {
             "ironclad": IRONCLAD_CARDS,
             "silent": SILENT_CARDS,
-            "defact": DEFECT_CARDS,  # Using 'defact' as defined in items.py
+            "defect": DEFECT_CARDS,
             "regent": REGENT_CARDS,
             "necrobinder": NECROBINDER_CARDS,
         }

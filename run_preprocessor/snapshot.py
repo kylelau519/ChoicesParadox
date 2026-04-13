@@ -244,3 +244,7 @@ class PlayerSnapshot:
             if model_id and model_id.startswith("ENCOUNTER"):
                 return True
         return False
+
+    def run(self):
+        while self.current_lumpsum_floor < len(self.data.map_point_history.flatten()):
+            self.walk()

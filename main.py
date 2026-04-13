@@ -53,7 +53,9 @@ def callback(file_path: str, eval_obj: Evaluator):
             return
 
         eval_obj.predict_damage_taken(reader)
-        logger.info("Type 'eval' or 'relic' to enter choices or 'help' for commands.")
+        logger.info(
+            "Type 'eval', 'relic', 'remove' or 'upgrade' to enter choices or 'help' for commands."
+        )
         logger.info("=" * 30 + "\n")
     except Exception as e:
         logger.error(f"Error in callback: {e}")
@@ -124,7 +126,9 @@ def take_card_choices():
 
     current_act = reader.current_act()
     snapshot = PlayerSnapshot(reader)
+    snapshot.run()
     generator = TestCaseGenerator(snapshot)
+    print(snapshot.deck.cards)
 
     remaining_combats = set(
         current_act.remaining_normal_encounters()
@@ -213,6 +217,7 @@ def take_relic_choices():
 
     current_act = reader.current_act()
     snapshot = PlayerSnapshot(reader)
+    snapshot.run()
     generator = TestCaseGenerator(snapshot)
 
     remaining_combats = set(
@@ -262,10 +267,169 @@ def take_relic_choices():
     print("-----------------------------\n")
 
 
+def take_removal_choices():
+    if not state.reader or not state.evaluator:
+        print(
+            "No save file loaded. Please wait for the listener to detect a save file."
+        )
+        return
+
+    reader = state.reader
+    eval_obj = state.evaluator
+
+    current_act = reader.current_act()
+    snapshot = PlayerSnapshot(reader)
+    snapshot.run()
+    generator = TestCaseGenerator(snapshot)
+
+    deck_cards = sorted(list(snapshot.deck.cards.keys()))
+    if not deck_cards:
+        print("Deck is empty. Nothing to remove.")
+        return
+
+    remaining_combats = set(
+        current_act.remaining_normal_encounters()
+        + current_act.remaining_elite_encounters()
+    )
+    if current_act.boss():
+        remaining_combats.add(current_act.boss())
+    if current_act.second_boss():
+        remaining_combats.add(current_act.second_boss())
+
+    unique_combats = sorted([c for c in remaining_combats if c])
+
+    print(
+        f"\nEvaluating removals against {len(unique_combats)} unique remaining combats..."
+    )
+
+    total_damages = {}  # label -> total_damage
+
+    # Labels: "Original" + "Removed CardName"
+    labels = ["Original"] + [f"Removed {c.replace('CARD.', '')}" for c in deck_cards]
+    for label in labels:
+        total_damages[label] = 0.0
+
+    for combat in unique_combats:
+        generator.set_encounter(combat)
+
+        # Original damage
+        orig_case = generator.vectorize()
+        total_damages["Original"] += eval_obj.predict(orig_case)[0]
+
+        # Damage for each removal
+        for card_id in deck_cards:
+            case, label = generator.test_remove_card(card_id)
+            total_damages[label] += eval_obj.predict(case)[0]
+
+    min_dmg = 1000000
+    suggested_removal = "None"
+
+    # Sort removals by total damage (ascending)
+    sorted_removals = sorted(total_damages.items(), key=lambda x: x[1])
+
+    logger.info("\nTop 3 Best removals (including Original):")
+    for i in range(min(3, len(sorted_removals))):
+        label, total_dmg = sorted_removals[i]
+        logger.info(f"  {i + 1}. {label}: {total_dmg:.2f}")
+
+    if len(sorted_removals) > 3:
+        logger.info("\nLast 2 Worst removals:")
+        for i in range(max(3, len(sorted_removals) - 2), len(sorted_removals)):
+            label, total_dmg = sorted_removals[i]
+            logger.info(f"  {label}: {total_dmg:.2f}")
+
+    suggested_removal = sorted_removals[0][0]
+    logger.info(f"\nSuggested removal: {suggested_removal}")
+    print("-----------------------------\n")
+
+
+def take_upgrade_choices():
+    if not state.reader or not state.evaluator:
+        print(
+            "No save file loaded. Please wait for the listener to detect a save file."
+        )
+        return
+
+    reader = state.reader
+    eval_obj = state.evaluator
+
+    current_act = reader.current_act()
+    snapshot = PlayerSnapshot(reader)
+    snapshot.run()
+    generator = TestCaseGenerator(snapshot)
+
+    deck_cards = sorted(list(snapshot.deck.cards.keys()))
+    if not deck_cards:
+        print("Deck is empty. Nothing to upgrade.")
+        return
+
+    remaining_combats = set(
+        current_act.remaining_normal_encounters()
+        + current_act.remaining_elite_encounters()
+    )
+    if current_act.boss():
+        remaining_combats.add(current_act.boss())
+    if current_act.second_boss():
+        remaining_combats.add(current_act.second_boss())
+
+    unique_combats = sorted([c for c in remaining_combats if c])
+
+    print(
+        f"\nEvaluating upgrades against {len(unique_combats)} unique remaining combats..."
+    )
+
+    total_damages = {}  # label -> total_damage
+    total_damages["Original"] = 0.0
+
+    valid_upgrades = []
+    for card_id in deck_cards:
+        if not card_id.endswith("+"):
+            valid_upgrades.append(card_id)
+            label = f"Upgraded {card_id.replace('CARD.', '')}"
+            total_damages[label] = 0.0
+
+    if not valid_upgrades:
+        print("No cards available to upgrade (all cards might be already upgraded).")
+        return
+
+    for combat in unique_combats:
+        generator.set_encounter(combat)
+
+        # Original damage
+        orig_case = generator.vectorize()
+        total_damages["Original"] += eval_obj.predict(orig_case)[0]
+
+        # Damage for each upgrade
+        for card_id in valid_upgrades:
+            case, label = generator.test_upgrade_card(card_id)
+            if case is not None:
+                total_damages[label] += eval_obj.predict(case)[0]
+
+    # Sort upgrades by total damage (ascending)
+    sorted_upgrades = sorted(total_damages.items(), key=lambda x: x[1])
+
+    logger.info("\nTop 3 Best upgrades (including Original):")
+    for i in range(min(3, len(sorted_upgrades))):
+        label, total_dmg = sorted_upgrades[i]
+        logger.info(f"  {i + 1}. {label}: {total_dmg:.2f}")
+
+    if len(sorted_upgrades) > 3:
+        logger.info("\nLast 2 Worst upgrades:")
+        for i in range(max(3, len(sorted_upgrades) - 2), len(sorted_upgrades)):
+            label, total_dmg = sorted_upgrades[i]
+            logger.info(f"  {label}: {total_dmg:.2f}")
+
+    suggested_upgrade = sorted_upgrades[0][0]
+    logger.info(f"\nSuggested upgrade: {suggested_upgrade}")
+    print("-----------------------------\n")
+
+
 def show_help():
     print("\nAvailable commands:")
     print("  eval   - Enter card choices to evaluate")
     print("  relic  - Enter relic choices to evaluate")
+    print("  remove - Evaluate which card is best to remove from current deck")
+    print("  upgrade - Evaluate which card is best to upgrade in current deck")
     print("  help   - Show this help message")
     print("  quit   - Exit the application")
     print("")
@@ -292,7 +456,7 @@ def main():
     try:
         while True:
             # Set up default completer for main commands
-            commands = ["eval", "relic", "help", "quit", "exit"]
+            commands = ["eval", "relic", "remove", "upgrade", "help", "quit", "exit"]
 
             def cmd_completer(text, state_idx):
                 options = [c for c in commands if c.startswith(text)]
@@ -311,6 +475,10 @@ def main():
                 take_card_choices()
             elif cmd == "relic":
                 take_relic_choices()
+            elif cmd == "remove":
+                take_removal_choices()
+            elif cmd == "upgrade":
+                take_upgrade_choices()
             elif cmd == "help":
                 show_help()
             elif cmd in ["quit", "exit"]:

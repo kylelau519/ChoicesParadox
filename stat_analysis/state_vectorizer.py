@@ -38,6 +38,15 @@ class TestCaseGenerator:
         # self.deck.add already handles normalization and validation
         self.deck.add(card_id)
 
+    def upgrade_card(self, card_id: str):
+        # card_id should be something like "CARD.STRIKE_R"
+        if card_id.endswith("+"):
+            raise ValueError(f"Card {card_id} is already upgraded.")
+
+        self.remove_card(card_id)
+        upgraded_id = card_id + "+"
+        self.add_card(upgraded_id)
+
     def add_potion(self, potion_id: str):
         potion_id = potion_id.strip().upper()
         if not potion_id.startswith("POTION."):
@@ -189,3 +198,25 @@ class TestCaseGenerator:
         self.relics = original_relics  # restore
         results = sp.vstack(results)
         return results, labels
+
+    def test_remove_card(self, card_id: str):
+        original_deck_cards = self.deck.cards.copy()
+        self.remove_card(card_id)
+        result = self.vectorize()
+        label = f"Removed {card_id.replace('CARD.', '')}"
+        self.deck.cards = original_deck_cards  # restore
+        return result, label
+
+    def test_upgrade_card(self, card_id: str):
+        original_deck_cards = self.deck.cards.copy()
+        if card_id.endswith("+"):
+            return None, None
+        try:
+            self.upgrade_card(card_id)
+            result = self.vectorize()
+            label = f"Upgraded {card_id.replace('CARD.', '')}"
+        except Exception:
+            return None, None
+        finally:
+            self.deck.cards = original_deck_cards  # restore
+        return result, label

@@ -100,11 +100,11 @@ class SaveMetadata:
 class CurrentSaveReader:
     acts: list[ActDetails]
     current_act_index: int
-    events_seen: list[str]
     map_point_history: RawMapPointHistory
     run_metadata: SaveMetadata
     players: list[RawPlayer]
     file_path: str
+    events_seen: list[str] | None
 
     @classmethod
     def from_file(cls, file_path: str) -> "CurrentSaveReader":
@@ -121,7 +121,7 @@ class CurrentSaveReader:
             for act_data in data["acts"]:
                 acts.append(ActDetails.from_dict(act_data))
             current_act_index = data["current_act_index"]
-            events_seen = data["events_seen"]
+            events_seen = data.get("events_seen", [])
             run_metadata = SaveMetadata.from_dict(data)
             players = []
             for player in data["players"]:
@@ -131,11 +131,13 @@ class CurrentSaveReader:
                         "deck": player["deck"],
                         "id": player["net_id"],
                         "max_potion_slot_count": player["max_potion_slot_count"],
-                        "potions": player["potions"],
-                        "relics": player["relics"],
+                        "relics": player.get("relics", []),
+                        "potions": player.get("potions", []),
                     }
                 )
-            map_point_history = RawMapPointHistory.from_dict(data["map_point_history"])
+            map_point_history = RawMapPointHistory.from_dict(
+                data.get("map_point_history", [])
+            )
         except KeyError as e:
             logger.error(f"Missing required current save data key: {e}")
             raise
@@ -150,17 +152,24 @@ class CurrentSaveReader:
             file_path=file_path,
         )
 
+    def current_act(self) -> ActDetails:
+        return self.acts[self.current_act_index]
+
 
 class SaveFileListener:
     def __init__(
         self,
         file_path: str,
-        callback: Callable[[CurrentSaveReader], None],
+        callback: Callable[..., Any],
+        *args: Any,
         interval: float = 1.0,
+        **kwargs: Any,
     ):
         self.file_path = file_path
         self.callback = callback
         self.interval = interval
+        self.args = args
+        self.kwargs = kwargs
         self._stop_event = threading.Event()
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._last_mtime = 0
@@ -182,8 +191,7 @@ class SaveFileListener:
                     current_mtime = os.path.getmtime(self.file_path)
                     if current_mtime > self._last_mtime:
                         self._last_mtime = current_mtime
-                        reader = CurrentSaveReader.from_file(self.file_path)
-                        self.callback(reader)
+                        self.callback(*self.args, **self.kwargs)
                 elif file_seen:
                     logger.info("Save file deleted, stopping listener.")
                     self._stop_event.set()

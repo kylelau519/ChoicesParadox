@@ -19,13 +19,13 @@ if not SAVE_PATH:
         SAVE_PATH = "current_run.save"  # Default fallback
 
 
-def my_callback(reader: CurrentSaveReader):
+def my_callback(file_path: str):
     """This function runs every time the file is updated."""
+    reader = CurrentSaveReader.from_file(file_path)
     print("\n" + "=" * 30)
     print("🔔 SAVE FILE UPDATE DETECTED!")
     print(f"Current Act Index: {reader.current_act_index}")
     print(f"Total Acts Loaded: {len(reader.acts)}")
-    print(f"Events Seen: {len(reader.events_seen)}")
     act_index = reader.current_act_index
     print(f"Next Elite is:  {reader.acts[act_index].next_elite()}")
     print(f"Next Normal encounter is: {reader.acts[act_index].next_normal_encounter()}")
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     print("Press Ctrl+C to stop.")
 
     # Initialize and start the listener
-    listener = SaveFileListener(SAVE_PATH, my_callback, interval=1.0)
+    listener = SaveFileListener(SAVE_PATH, my_callback, SAVE_PATH, interval=1.0)
     listener.start()
 
     try:

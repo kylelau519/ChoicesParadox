@@ -59,6 +59,9 @@ class ActDetails:
     def remaining_normal_encounters(self) -> list[str]:
         return self.normal_encounter_ids[self.normal_encounters_visited :]
 
+    def remaining_elite_encounters(self) -> list[str]:
+        return self.elite_encounter_ids[self.elite_encounters_visited :]
+
     def next_elite(self) -> str:
         return self.elite_encounter_ids[self.elite_encounters_visited]
 

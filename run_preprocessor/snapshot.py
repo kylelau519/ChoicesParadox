@@ -2,7 +2,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from item_scrapper.items import POTIONS, RELICS
+from item_scrapper.items import ALL_CARDS, POTIONS, RELICS
 from run_preprocessor.card import Card
 from run_preprocessor.deck import Deck
 from run_preprocessor.mappoint import RawMapPoint, RawMapPointHistory
@@ -11,26 +11,6 @@ from run_preprocessor.types import RawPlayer, RawPlayerStats
 from .player import Character, Player
 
 logger = logging.getLogger(__name__)
-
-
-def validate_relic_id(relic_id: str) -> str:
-    relic_id = relic_id.strip().upper()
-    if not relic_id.startswith("RELIC."):
-        relic_id = "RELIC." + relic_id
-    if relic_id not in RELICS:
-        logger.error(f"Invalid relic ID: {relic_id}")
-        raise ValueError(f"Invalid relic ID: {relic_id}")
-    return relic_id
-
-
-def validate_potion_id(potion_id: str) -> str:
-    potion_id = potion_id.strip().upper()
-    if not potion_id.startswith("POTION."):
-        potion_id = "POTION." + potion_id
-    if potion_id not in POTIONS:
-        logger.error(f"Invalid potion ID: {potion_id}")
-        raise ValueError(f"Invalid potion ID: {potion_id}")
-    return potion_id
 
 
 class RunDataCommon(Protocol):

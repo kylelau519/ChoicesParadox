@@ -26,7 +26,7 @@ class Evaluator:
     def from_file(cls, model_path: str):
         # Ensure HurdleModel is known to joblib
         try:
-            from stat_analysis.train_byhurdle import HurdleModel
+            from stat_analysis.train_hurdle import HurdleModel
         except ImportError:
             logger.debug("HurdleModel not found in stat_analysis.train_byhurdle")
 

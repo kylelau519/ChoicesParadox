@@ -1,6 +1,6 @@
 import logging
 
-from item_scrapper.items import ALL_CARDS
+from item_scrapper.items import validate_card_id
 from run_preprocessor.card import Card
 
 logger = logging.getLogger(__name__)

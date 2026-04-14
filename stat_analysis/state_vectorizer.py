@@ -2,7 +2,6 @@
 import itertools
 
 import scipy.sparse as sp
-
 from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, POTIONS, RELICS
 from run_preprocessor.deck import validate_card_id
 from stat_analysis.preprocess import GLOBAL_VECTORIZER, MASTER_SCHEMA, MasterSchema
@@ -38,6 +37,15 @@ class TestCaseGenerator:
     def add_card(self, card_id: str):
         # self.deck.add already handles normalization and validation
         self.deck.add(card_id)
+
+    def upgrade_card(self, card_id: str):
+        # card_id should be something like "CARD.STRIKE_R"
+        if card_id.endswith("+"):
+            raise ValueError(f"Card {card_id} is already upgraded.")
+
+        self.remove_card(card_id)
+        upgraded_id = card_id + "+"
+        self.add_card(upgraded_id)
 
     def add_potion(self, potion_id: str):
         potion_id = potion_id.strip().upper()
@@ -158,3 +166,76 @@ class TestCaseGenerator:
         self.deck.cards = original_deck_cards  # restore
         results = sp.vstack(results)
         return results, labels
+
+    def test_adding_relics(self, relic_ids: list[str], pick: int = 1):
+        original_relics = self.relics.copy()
+        results = []
+        labels = []
+
+        # Generate combinations of adding 0 up to 'pick' relics from the pool
+        for r in range(pick + 1):
+            for combination in itertools.combinations(relic_ids, r):
+                valid_combination = [c.strip().upper() for c in combination]
+                valid_combination = [
+                    f"RELIC.{c}" if not c.startswith("RELIC.") else c
+                    for c in valid_combination
+                ]
+                for relic_id in valid_combination:
+                    if relic_id not in RELICS:
+                        raise ValueError(f"Relic ID '{relic_id}' is not valid.")
+                added_labels = [c.replace("RELIC.", "") for c in valid_combination]
+                label = "Original" if not added_labels else " + ".join(added_labels)
+
+                # Temporarily modify self.relics
+                temp_relics = original_relics.copy()
+                for relic_id in valid_combination:
+                    temp_relics[relic_id] = temp_relics.get(relic_id, 0) + 1
+
+                self.relics = temp_relics
+                labels.append(label)
+                results.append(self.vectorize())
+
+        self.relics = original_relics  # restore
+        results = sp.vstack(results)
+        return results, labels
+
+    def test_remove_card(self, card_id: str):
+        original_deck_cards = self.deck.cards.copy()
+        self.remove_card(card_id)
+        result = self.vectorize()
+        label = f"Removed {card_id.replace('CARD.', '')}"
+        self.deck.cards = original_deck_cards  # restore
+        return result, label
+
+    def test_removals(self, card_ids: list[str]):
+        results = [self.vectorize()]
+        labels = ["Original"]
+        for card_id in card_ids:
+            res, label = self.test_remove_card(card_id)
+            results.append(res)
+            labels.append(label)
+        return sp.vstack(results), labels
+
+    def test_upgrade_card(self, card_id: str):
+        original_deck_cards = self.deck.cards.copy()
+        if card_id.endswith("+"):
+            return None, None
+        try:
+            self.upgrade_card(card_id)
+            result = self.vectorize()
+            label = f"Upgraded {card_id.replace('CARD.', '')}"
+        except Exception:
+            return None, None
+        finally:
+            self.deck.cards = original_deck_cards  # restore
+        return result, label
+
+    def test_upgrades(self, card_ids: list[str]):
+        results = [self.vectorize()]
+        labels = ["Original"]
+        for card_id in card_ids:
+            res, label = self.test_upgrade_card(card_id)
+            if res is not None:
+                results.append(res)
+                labels.append(label)
+        return sp.vstack(results), labels

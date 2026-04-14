@@ -1,9 +1,14 @@
+import logging
 import os
 
 import joblib
+from stat_analysis.preprocess import GLOBAL_VECTORIZER, LoadRuns
 from xgboost import XGBRegressor
 
-from stat_analysis.preprocess import LoadRuns
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 
 class Trainer:
@@ -20,15 +25,9 @@ class Trainer:
         )
         return x_train, x_test, y_train, y_test
 
-    def train(self, x_train, y_train, n_estimators=100, max_depth=5, learning_rate=0.1):
-        self.model = XGBRegressor(
-            n_estimators=n_estimators,
-            max_depth=max_depth,
-            learning_rate=learning_rate,
-        )
-        print(
-            f"Training XGBRegressor (estimators={n_estimators}, depth={max_depth})..."
-        )
+    def train(self, x_train, y_train, **params):
+        self.model = XGBRegressor(**params)
+        print(f"Training XGBRegressor (params={params})...")
         self.model.fit(x_train, y_train)
         return self.model
 
@@ -39,15 +38,31 @@ class Trainer:
 
 
 def main():
-    trainer = Trainer()
+    trainer = Trainer(ascension=[3, 4, 5, 6, 7, 8, 9, 10])
     x_train, x_test, y_train, y_test = trainer.load_data()
+
+    for i in range(5):
+        logger.debug(
+            f"Sample {i} - X: {GLOBAL_VECTORIZER.inverse_transform(x_train[i : i + 1])}, y: {y_train[i]}"
+        )
 
     if x_train is None:
         print("Error: No data found.")
         return
 
+    params = {
+        "objective": "reg:tweedie",
+        "eval_metric": "rmse",
+        "max_depth": 10,
+        "n_estimators": 6000,
+        "colsample_bytree": 0.2,
+        "subsample": 0.8,
+        "learning_rate": 0.03,
+        "tree_method": "hist",
+    }
+
     # Train
-    trainer.train(x_train, y_train)
+    trainer.train(x_train, y_train, **params)
     model_path = "models/xgb_model.joblib"
     trainer.save_model(model_path)
 

@@ -3,7 +3,6 @@ import logging
 
 import joblib
 import numpy as np
-
 from item_scrapper.items import *
 from run_preprocessor.save_reader import CurrentSaveReader
 from run_preprocessor.snapshot import PlayerSnapshot
@@ -43,7 +42,7 @@ class Evaluator:
         char_card_maps = {
             "ironclad": IRONCLAD_CARDS,
             "silent": SILENT_CARDS,
-            "defact": DEFECT_CARDS,  # Using 'defact' as defined in items.py
+            "defect": DEFECT_CARDS,
             "regent": REGENT_CARDS,
             "necrobinder": NECROBINDER_CARDS,
         }
@@ -94,6 +93,7 @@ class Evaluator:
     def predict_damage_taken(self, current_save: CurrentSaveReader):
         current_act = current_save.current_act()
         snapshot = PlayerSnapshot(current_save)
+        snapshot.run()
         generator = TestCaseGenerator(snapshot)
         next_normal = current_act.next_normal_encounter()
         next_elite = current_act.next_elite()
@@ -107,14 +107,14 @@ class Evaluator:
         next_preds = self.predict(next_enc)
         logger.info("Predicted damage for next encounters:")
         for label, pred in zip(enc_labels, next_preds):
-            logger.info(f"  {label}: {pred}")
+            logger.info(f"  {label.lower()}: {pred:.2f}")
         logger.info("")
 
         # Predict damage for remaining encounters
         logger.info("Predicted damage for remaining normal encounters:")
         remaining_preds = self.predict(remaining_enc)
         for label, pred in zip(remaining_labels, remaining_preds):
-            logger.info(f"  {label}: {pred}")
+            logger.info(f"  {label.lower()}: {pred:.2f}")
         logger.info("")
 
         # Predict damage for boss encounter if applicable
@@ -123,5 +123,58 @@ class Evaluator:
         if boss:
             boss_enc, boss_labels = generator.test_encounters([boss])
             boss_pred = self.predict(boss_enc)
-            logger.info(f"Predicted damage for boss encounter {boss}: {boss_pred[0]}")
+            logger.info(f"Predicted damage for boss encounter:")
+            logger.info(
+                f"  {boss.removeprefix('ENCOUNTER.').lower()}: {boss_pred[0]:.2f}"
+            )
+        second_boss = current_act.second_boss()
+        if second_boss:
+            second_boss_enc, second_boss_labels = generator.test_encounters(
+                [second_boss]
+            )
+            second_boss_pred = self.predict(second_boss_enc)
+            logger.info(f"Predicted damage for second boss encounter:")
+            logger.info(
+                f"  {second_boss.removeprefix('ENCOUNTER.').lower()}: {second_boss_pred[0]:.2f}"
+            )
         logger.info("")
+
+    def evaluate_game_options(self, reader: CurrentSaveReader, test_func, items):
+        """
+        Generic method to evaluate a set of options (cards, relics, etc.) against all remaining combats in the act.
+        """
+        current_act = reader.current_act()
+        snapshot = PlayerSnapshot(reader)
+        snapshot.run()
+        generator = TestCaseGenerator(snapshot)
+
+        remaining_combats = set(
+            current_act.remaining_normal_encounters()
+            + current_act.remaining_elite_encounters()
+        )
+        if current_act.boss():
+            remaining_combats.add(current_act.boss())
+        if current_act.second_boss():
+            remaining_combats.add(current_act.second_boss())
+
+        unique_combats = sorted([c for c in remaining_combats if c])
+
+        total_damages = {}  # label -> total_damage
+
+        # Initial labels to setup total_damages dict
+        if not unique_combats:
+            return {}
+
+        generator.set_encounter(unique_combats[0])
+        _, labels = test_func(generator, items)
+        for label in labels:
+            total_damages[label] = 0.0
+
+        for combat in unique_combats:
+            generator.set_encounter(combat)
+            cases, labels = test_func(generator, items)
+            preds = self.predict(cases)
+            for idx, label in enumerate(labels):
+                total_damages[label] += preds[idx]
+
+        return total_damages

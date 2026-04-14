@@ -8,6 +8,9 @@ DATA_DIR = "data/items"
 
 ###### ALL cards dict ######
 cards_json = json.load(open(f"{DATA_DIR}/cards.json"))
+import logging
+
+logger = logging.getLogger(__name__)
 
 COLORLESS_CARDS: dict[str, int] = {}
 
@@ -19,6 +22,8 @@ DEFECT_CARDS: dict[str, int] = {}
 
 EVENT_CARDS: dict[str, int] = {}
 CURSE_CARDS: dict[str, int] = {}
+
+QUEST_CARDS: dict[str, int] = {}
 
 ALL_CARDS: dict[str, int] = {}
 
@@ -33,12 +38,15 @@ for card_dict in cards_json:
         REGENT_CARDS["CARD." + card_dict["id"]] = 0
     elif card_dict["color"] == "silent":
         SILENT_CARDS["CARD." + card_dict["id"]] = 0
-    elif card_dict["color"] == "defact":
+    elif card_dict["color"] == "defect":
         DEFECT_CARDS["CARD." + card_dict["id"]] = 0
     elif card_dict["color"] == "curse":
         CURSE_CARDS["CARD." + card_dict["id"]] = 0
     elif card_dict["color"] == "event":
         EVENT_CARDS["CARD." + card_dict["id"]] = 0
+    elif card_dict["color"] == "quest":
+        QUEST_CARDS["CARD." + card_dict["id"]] = 0
+
 
 ALL_CARDS.update(COLORLESS_CARDS)
 ALL_CARDS.update(IRONCLAD_CARDS)
@@ -53,6 +61,7 @@ for k, v in ALL_CARDS.items():
     upgrades.update({f"{k}+": 0})
 ALL_CARDS.update(upgrades)
 ALL_CARDS.update(CURSE_CARDS)
+ALL_CARDS.update(QUEST_CARDS)
 
 ###### ALL relic list ######
 RELICS: dict[str, int] = {}
@@ -92,3 +101,37 @@ for encounter_dict in encounters_json:
     elif encounter_dict["act"] == "Act 3 - Glory":
         ACT3_ENCOUNTERS["ENCOUNTER." + encounter_dict["id"]] = 0
     ALL_ENCOUNTERS["ENCOUNTER." + encounter_dict["id"]] = 0
+
+
+def validate_card_id(card_id: str) -> str:
+    card_id = card_id.strip().upper()
+    if not card_id.startswith("CARD."):
+        card_id = "CARD." + card_id
+    if card_id not in ALL_CARDS:
+        logger.error(f"Invalid card ID: {card_id}")
+        raise ValueError(f"Invalid card ID: {card_id}")
+    return card_id
+
+
+def validate_relic_id(relic_id: str) -> str:
+    relic_id = relic_id.strip().upper()
+    if not relic_id.startswith("RELIC."):
+        relic_id = "RELIC." + relic_id
+    if relic_id not in RELICS:
+        logger.error(f"Invalid relic ID: {relic_id}")
+        raise ValueError(f"Invalid relic ID: {relic_id}")
+    return relic_id
+
+
+def validate_potion_id(potion_id: str) -> str:
+    potion_id = potion_id.strip().upper()
+    if not potion_id.startswith("POTION."):
+        potion_id = "POTION." + potion_id
+    if potion_id not in POTIONS:
+        logger.error(f"Invalid potion ID: {potion_id}")
+        raise ValueError(f"Invalid potion ID: {potion_id}")
+    return potion_id
+
+
+if __name__ == "__main__":
+    print(ACT2_ENCOUNTERS)

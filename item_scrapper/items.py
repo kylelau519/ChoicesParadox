@@ -3,8 +3,7 @@
 
 import json
 
-
-DATA_DIR = "data/items"
+DATA_DIR = "item_scrapper"
 
 ###### ALL cards dict ######
 cards_json = json.load(open(f"{DATA_DIR}/cards.json"))

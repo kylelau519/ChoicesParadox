@@ -6,6 +6,16 @@ from run_preprocessor.card import Card
 logger = logging.getLogger(__name__)
 
 
+def validate_card_id(card_id: str) -> str:
+    card_id = card_id.strip().upper()
+    if not card_id.startswith("CARD."):
+        card_id = "CARD." + card_id
+    if card_id not in ALL_CARDS:
+        logger.error(f"Invalid card ID: {card_id}")
+        raise ValueError(f"Invalid card ID: {card_id}")
+    return card_id
+
+
 class Deck:
     def __init__(self, cards: list[Card]):
         self.cards: dict[str, int] = {}  # card id to count

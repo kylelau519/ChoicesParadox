@@ -1,19 +1,15 @@
 import json
 import os
+from typing import Any
 
-from .scraper import STS2RunsScraper
+from scraper import STS2RunsScraper, SpireCodexScraper
 
 
-def main():
-    s = STS2RunsScraper()
-    s.scrape()
-    print(f"Succssfully scraped {len(s.data)} runs.")
-
-    for r in s.data:
-        run = r["run"]
-
-        # skip multi-player games
-        players = run["players"]
+def save_data(runs: list[dict[str, Any]]):
+    for run in runs:
+        players = run.get("players")
+        if players is None:
+            continue
         if len(players) != 1:
             continue
 
@@ -33,7 +29,17 @@ def main():
             print(f"Saving {path}")
             json.dump(run, f, indent=4)
 
-    print(f"Succssfully scraped {len(s.data)} runs.")
+def main():
+    codex = SpireCodexScraper()
+    codex.scrape()
+    s = STS2RunsScraper()
+    s.scrape()
+
+    save_data(s.data)
+    save_data(codex.data)
+
+    print(f"Succssfully scraped {len(codex.data)} runs from spire-codex.")
+    print(f"Succssfully scraped {len(s.data)} runs from sts2runs.")
 
 
 if __name__ == "__main__":

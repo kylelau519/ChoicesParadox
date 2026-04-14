@@ -1,8 +1,7 @@
 [project]
-name = "run-scrapper"
+name = "item-scrapper"
 version = "0.1.0"
-description = "Scraper for ChoicesParadox"
-readme = "README.md"
+description = "Item scraper for ChoicesParadox"
 requires-python = ">=3.13"
 dependencies = [
     "requests>=2.33.1",

@@ -3,8 +3,11 @@
 
 import json
 
+
+DATA_DIR = "data/items"
+
 ###### ALL cards dict ######
-cards_json = json.load(open("item_scrapper/cards.json"))
+cards_json = json.load(open(f"{DATA_DIR}/cards.json"))
 import logging
 
 logger = logging.getLogger(__name__)
@@ -62,20 +65,20 @@ ALL_CARDS.update(QUEST_CARDS)
 
 ###### ALL relic list ######
 RELICS: dict[str, int] = {}
-relics_json = json.load(open("item_scrapper/relics.json"))
+relics_json = json.load(open(f"{DATA_DIR}/relics.json"))
 for relic_dict in relics_json:
     RELICS["RELIC." + relic_dict["id"]] = 0
     # RELICS.append("RELIC." + relic_dict["id"])
 
 ###### ALL potion dict ######
-potions_json = json.load(open("item_scrapper/potions.json"))
+potions_json = json.load(open(f"{DATA_DIR}/potions.json"))
 POTIONS: dict[str, int] = {}
 for potion_dict in potions_json:
     POTIONS["POTION." + potion_dict["id"]] = 0
 
 
 ##### ALL encounters list ######
-encounters_json = json.load(open("item_scrapper/encounters.json"))
+encounters_json = json.load(open(f"{DATA_DIR}/encounters.json"))
 ACT1_OVERGROWTH_ENCOUNTERS: dict[str, int] = {}
 ACT1_UNDERDOCKS_ENCOUNTERS: dict[str, int] = {}
 ACT2_ENCOUNTERS: dict[str, int] = {}

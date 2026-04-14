@@ -11,16 +11,13 @@ from typing import Any, Protocol
 import numpy as np
 import scipy.sparse as sp
 import sklearn
-from sklearn.feature_extraction import DictVectorizer
-from sklearn.metrics import mean_absolute_error
-from sklearn.model_selection import train_test_split
-
 from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, POTIONS, RELICS
 from run_preprocessor.deck import Deck
 from run_preprocessor.run_reader import RawData
 from run_preprocessor.snapshot import PlayerSnapshot
+from sklearn.feature_extraction import DictVectorizer
+from sklearn.model_selection import train_test_split
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -65,6 +62,9 @@ class RunToInputConverter:
         input.update(self.snapshot_now.deck.cards)
         input.update(self.snapshot_now.potions)
         input.update(self.snapshot_now.relics)
+        logger.debug(f"Deck: {self.snapshot_now.deck.cards}")
+        logger.debug(f"Relics: {self.snapshot_now.relics}")
+        logger.debug(f"Potions: {self.snapshot_now.potions}")
 
         # Ecnounter and the damage taken in the next encounter
         map_point = self.raw_data.map_point_history.flatten()[

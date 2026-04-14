@@ -207,6 +207,15 @@ class TestCaseGenerator:
         self.deck.cards = original_deck_cards  # restore
         return result, label
 
+    def test_removals(self, card_ids: list[str]):
+        results = [self.vectorize()]
+        labels = ["Original"]
+        for card_id in card_ids:
+            res, label = self.test_remove_card(card_id)
+            results.append(res)
+            labels.append(label)
+        return sp.vstack(results), labels
+
     def test_upgrade_card(self, card_id: str):
         original_deck_cards = self.deck.cards.copy()
         if card_id.endswith("+"):
@@ -220,3 +229,13 @@ class TestCaseGenerator:
         finally:
             self.deck.cards = original_deck_cards  # restore
         return result, label
+
+    def test_upgrades(self, card_ids: list[str]):
+        results = [self.vectorize()]
+        labels = ["Original"]
+        for card_id in card_ids:
+            res, label = self.test_upgrade_card(card_id)
+            if res is not None:
+                results.append(res)
+                labels.append(label)
+        return sp.vstack(results), labels

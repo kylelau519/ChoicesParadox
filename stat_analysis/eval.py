@@ -93,6 +93,7 @@ class Evaluator:
     def predict_damage_taken(self, current_save: CurrentSaveReader):
         current_act = current_save.current_act()
         snapshot = PlayerSnapshot(current_save)
+        snapshot.run()
         generator = TestCaseGenerator(snapshot)
         next_normal = current_act.next_normal_encounter()
         next_elite = current_act.next_elite()
@@ -137,3 +138,43 @@ class Evaluator:
                 f"  {second_boss.removeprefix('ENCOUNTER.').lower()}: {second_boss_pred[0]:.2f}"
             )
         logger.info("")
+
+    def evaluate_game_options(self, reader: CurrentSaveReader, test_func, items):
+        """
+        Generic method to evaluate a set of options (cards, relics, etc.) against all remaining combats in the act.
+        """
+        current_act = reader.current_act()
+        snapshot = PlayerSnapshot(reader)
+        snapshot.run()
+        generator = TestCaseGenerator(snapshot)
+
+        remaining_combats = set(
+            current_act.remaining_normal_encounters()
+            + current_act.remaining_elite_encounters()
+        )
+        if current_act.boss():
+            remaining_combats.add(current_act.boss())
+        if current_act.second_boss():
+            remaining_combats.add(current_act.second_boss())
+
+        unique_combats = sorted([c for c in remaining_combats if c])
+
+        total_damages = {}  # label -> total_damage
+
+        # Initial labels to setup total_damages dict
+        if not unique_combats:
+            return {}
+
+        generator.set_encounter(unique_combats[0])
+        _, labels = test_func(generator, items)
+        for label in labels:
+            total_damages[label] = 0.0
+
+        for combat in unique_combats:
+            generator.set_encounter(combat)
+            cases, labels = test_func(generator, items)
+            preds = self.predict(cases)
+            for idx, label in enumerate(labels):
+                total_damages[label] += preds[idx]
+
+        return total_damages

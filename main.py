@@ -75,7 +75,7 @@ def main():
     logger.info(f"🚀 Starting listener on {SAVE_PATH}")
 
     # Change model path here to choose which model to use.
-    model_path = os.getenv("MODEL_PATH", "models/hurdle_model.joblib")
+    model_path = os.getenv("MODEL_PATH", "models/hurdle_model_corr_tweedie.joblib")
     if not os.path.exists(model_path):
         model_path = "models/xgb_model.joblib"
         if not os.path.exists(model_path):
@@ -117,6 +117,22 @@ def main():
                 cli.take_removal_choices(state)
             elif cmd == "upgrade":
                 cli.take_upgrade_choices(state)
+            elif cmd == "_deck":
+                if state.reader:
+                    snapshot = PlayerSnapshot(state.reader)
+                    snapshot.run()
+                    print("\n--- DEBUG: Current Deck ---")
+                    active_cards = sorted(
+                        [(k, v) for k, v in snapshot.deck.cards.items() if v > 0]
+                    )
+                    for card_id, count in active_cards:
+                        print(f"  {card_id:.<35} {count}")
+                    print(
+                        f"Total Unique: {len(active_cards)} | Total Cards: {sum(v for _, v in active_cards)}"
+                    )
+                    print("---------------------------\n")
+                else:
+                    print("No save file loaded yet.")
             elif cmd == "help":
                 cli.show_help()
             elif cmd in ["quit", "exit"]:

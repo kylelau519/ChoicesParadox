@@ -37,12 +37,23 @@ class HurdleModel:
 
 
 class HurdleTrainer:
-    def __init__(self, build_id="v0.102.0", character="*", ascension=None, suffix=""):
+    def __init__(
+        self,
+        build_id="v0.102.0",
+        character="*",
+        ascension=None,
+        suffix="",
+        model_path=None,
+    ):
         self.build_id = build_id
         self.character = character
         self.ascension = ascension or [7, 8, 9, 10]
         self.model = None
         self.suffix = suffix
+        if model_path:
+            self.model_path = model_path
+        else:
+            self.model_path = f"models/hurdle_model_{self.suffix}.joblib"
 
     def load_data(self, test_size=0.2):
         loader = LoadRuns(self.character, self.ascension, self.build_id)
@@ -68,13 +79,16 @@ class HurdleTrainer:
         self.model = HurdleModel(clf, reg)
         return self.model
 
-    def save_model(self, path="models/hurdle_model.joblib"):
+    def save_model(self, path=None):
+        if path is None:
+            path = self.model_path
         os.makedirs(os.path.dirname(path), exist_ok=True)
         joblib.dump(self.model, path)
         print(f"Model saved to {path}")
 
     def test_model(self, x_test, y_test, model_path=None):
-        if model_path:
+        if model_path is None:
+            model_path = self.model_path
             # Ensure HurdleModel is in the namespace when loading
             self.model = joblib.load(model_path)
         if self.model is None:
@@ -179,7 +193,7 @@ class HurdleTrainer:
 
 
 def main():
-    trainer = HurdleTrainer(ascension=[3, 4, 5, 6, 7, 8, 9, 10], suffix="hurdle")
+    trainer = HurdleTrainer(ascension=[3, 4, 5, 6, 7, 8, 9, 10], suffix="corr_tweedie")
     data = trainer.load_data()
     if data[0] is None:
         print("Error: No data found.")
@@ -206,7 +220,7 @@ def main():
     }
 
     reg_params = {
-        "objective": "reg:squarederror",
+        "objective": "reg:tweedie",
         "max_depth": 8,
         "n_estimators": 2000,
         "learning_rate": 0.05,
@@ -214,7 +228,6 @@ def main():
     }
 
     # Train
-    model_path = "models/hurdle_model.joblib"
     trainer.train(
         y_clf_train=y_clf_train,
         x_clf_train=x_train,
@@ -223,10 +236,10 @@ def main():
         clf_params=clf_params,
         reg_params=reg_params,
     )
-    trainer.save_model(model_path)
+    trainer.save_model()
 
     # Test and Report
-    trainer.test_model(x_test, y_test, model_path=model_path)
+    trainer.test_model(x_test, y_test, model_path=trainer.model_path)
 
 
 if __name__ == "__main__":

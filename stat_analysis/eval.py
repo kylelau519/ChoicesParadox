@@ -1,5 +1,6 @@
 # Evaluator class for evaluating the performance of a trained model and answering questions about feature importance and predictions.
 import logging
+from typing import Any, Protocol
 
 import joblib
 import numpy as np
@@ -12,13 +13,31 @@ from stat_analysis.state_vectorizer import TestCaseGenerator
 logger = logging.getLogger(__name__)
 
 
+class Predictor(Protocol):
+    def predict(self, X: Any) -> np.ndarray: ...
+
+
 class Evaluator:
-    def __init__(self, model_path: str, current_save_path: str = ""):
-        self.model = joblib.load(model_path)
+    def __init__(self, model: Predictor):
+        self.model = model
         self.vectorizer = GLOBAL_VECTORIZER
+
+    @classmethod
+    def from_file(cls, model_path: str):
+        # Ensure HurdleModel is known to joblib
+        try:
+            from stat_analysis.train_byhurdle import HurdleModel
+        except ImportError:
+            logger.debug("HurdleModel not found in stat_analysis.train_byhurdle")
+
+        model = joblib.load(model_path)
+        return cls(model)
 
     def predict(self, x):
         y_pred = self.model.predict(x)
+        # Handle cases where model might return something else than 1D array
+        if hasattr(y_pred, "flatten"):
+            y_pred = y_pred.flatten()
         return y_pred
 
     # Model evaluation methods
@@ -31,11 +50,17 @@ class Evaluator:
         show_colorless_cards=True,
         show_event_cards=True,
         show_encounters=True,
+        model_component=None,  # 'clf' or 'reg' for HurdleModel
     ):
-        if not hasattr(self.model, "feature_importances_"):
-            raise NotImplementedError("Model does not support feature importance.")
+        model = self.model
+        if model_component and hasattr(self.model, model_component):
+            model = getattr(self.model, model_component)
 
-        importances = self.model.feature_importances_
+        if not hasattr(model, "feature_importances_"):
+            logger.warning(f"Model {type(model)} does not support feature importance.")
+            return []
+
+        importances = model.feature_importances_
         feature_names = self.vectorizer.get_feature_names_out()
 
         # Map character names to their card dictionaries

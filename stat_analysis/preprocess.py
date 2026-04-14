@@ -159,12 +159,29 @@ class LoadRuns:
         return self.runs_path
 
     def get_train_test_set(self, test_size: float = 0.2, random_state: int = 42):
+        all_X_matrices, all_y_arrays = self.get_raw_data()
+        if not all_X_matrices:
+            return None, None, None, None
+
+        # 2. Stack into your master dataset
+        x_total = sp.vstack(all_X_matrices, format="csr")
+        y_total = np.concatenate(all_y_arrays)
+
+        logger.info(f"Total dataset shape: X={x_total.shape}, y={y_total.shape}")
+
+        # shuffled already
+        x_train, x_test, y_train, y_test = train_test_split(
+            x_total, y_total, test_size=test_size, random_state=random_state
+        )
+        return x_train, x_test, y_train, y_test
+
+    def get_raw_data(self):
         all_X_matrices = []
         all_y_arrays = []
         runs = self.get_runs_path()
         if not runs:
             logger.error("No run files to process.")
-            return None, None, None, None
+            return None, None
 
         for run in runs:
             logger.debug(f"Processing run file: {run}")
@@ -180,19 +197,51 @@ class LoadRuns:
 
         if not all_X_matrices:
             logger.error("No valid data extracted from run files.")
-            return None, None, None, None
+            return None, None
+        return all_X_matrices, all_y_arrays
 
-        # 2. Stack into your master dataset
+    def get_hurdle_train_test_set(self, test_size: float = 0.2, random_state: int = 42):
+        """
+        Returns:
+            x_train, x_test, y_train, y_test, y_clf_train, y_clf_test, x_reg_train, x_reg_test, y_reg_train, y_reg_test
+        """
+        all_X_matrices, all_y_arrays = self.get_raw_data()
+        if not all_X_matrices:
+            return None, None, None, None, None, None, None, None, None, None
+
         x_total = sp.vstack(all_X_matrices, format="csr")
         y_total = np.concatenate(all_y_arrays)
 
-        logger.info(f"Total dataset shape: X={x_total.shape}, y={y_total.shape}")
+        # Classification target (0 if y == 0, 1 if y > 0)
+        y_clf = (y_total > 0).astype(int)
 
-        # shuffled already
-        x_train, x_test, y_train, y_test = train_test_split(
-            x_total, y_total, test_size=test_size, random_state=random_state
+        # Regression data (only where y > 0)
+        mask = y_total > 0
+        x_reg = x_total[mask]
+        y_reg = y_total[mask]
+
+        # Split classification data (using full dataset)
+        x_train, x_test, y_train, y_test, y_clf_train, y_clf_test = train_test_split(
+            x_total, y_total, y_clf, test_size=test_size, random_state=random_state
         )
-        return x_train, x_test, y_train, y_test
+
+        # Split regression data (using only y > 0)
+        x_reg_train, x_reg_test, y_reg_train, y_reg_test = train_test_split(
+            x_reg, y_reg, test_size=test_size, random_state=random_state
+        )
+
+        return (
+            x_train,
+            x_test,
+            y_train,
+            y_test,
+            y_clf_train,
+            y_clf_test,
+            x_reg_train,
+            x_reg_test,
+            y_reg_train,
+            y_reg_test,
+        )
 
     def show_damage_taken_hist(self):
 

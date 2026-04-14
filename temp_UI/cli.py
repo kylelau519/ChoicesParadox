@@ -155,7 +155,7 @@ def take_upgrade_choices(state):
     valid_upgrades = [
         c
         for c in snapshot.deck.cards
-        if snapshot.deck.cards[c] > 0 and not c.endswith("+")
+        if snapshot.deck.cards[c] > 0 and not c.endswith("+") and f"{c}+" in ALL_CARDS
     ]
     if not valid_upgrades:
         print("No cards to upgrade.")

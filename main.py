@@ -73,7 +73,7 @@ def callback(file_path: str, eval_obj: Evaluator):
 def main():
     global SAVE_PATH
     logger.info(f"🚀 Starting listener on {SAVE_PATH}")
-    evaluator = Evaluator("testfiles/xgb_model.joblib", SAVE_PATH)
+    evaluator = Evaluator("models/xgb_model.joblib", SAVE_PATH)
 
     # Start the background listener
     listener = SaveFileListener(SAVE_PATH, callback, SAVE_PATH, evaluator, interval=1.0)

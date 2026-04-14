@@ -8,18 +8,16 @@
 import logging
 from typing import Any, Protocol
 
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
-import sklearn
-from sklearn.feature_extraction import DictVectorizer
-from sklearn.model_selection import train_test_split
-
 from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, POTIONS, RELICS
 from run_preprocessor.deck import Deck
 from run_preprocessor.run_reader import RawData
 from run_preprocessor.snapshot import PlayerSnapshot
+from sklearn.feature_extraction import DictVectorizer
+from sklearn.model_selection import train_test_split
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -76,13 +74,19 @@ class RunToInputConverter:
         encounters: dict[str, int] = {}
         for room in rooms:
             model_id = room.get("model_id", "")
+            logger.debug(f"Processing room with model_id: {model_id}")
             if model_id and model_id.startswith("ENCOUNTER"):
                 encounters[model_id] = 1
+            else:
+                logger.debug(
+                    f"getting {model_id} from floor {self.snapshot_next.current_lumpsum_floor}, skipping."
+                )
+                return None, None  # Not an encounter, skip this point
 
         input.update(encounters)
         player_stat = map_point.get_player_stat(self.snapshot_next.player_id)
         target: dict[str, int] = {}
-        damage_taken = player_stat.get("damage_taken", 0)
+        damage_taken = player_stat["damage_taken"]
         target["damage_taken"] = damage_taken
         return input, target
 
@@ -103,6 +107,12 @@ class RunToInputConverter:
         while self.snapshot_now.current_lumpsum_floor < num_total_floors:
             if self.snapshot_next.is_encounter():
                 input, target = self.convert_snapshot()
+                if input is None and target is None:
+                    logger.debug(
+                        f"Skipping floor {self.snapshot_next.current_lumpsum_floor} as it's not an encounter."
+                    )
+                    self.walk()
+                    continue
                 inputs.append(input)
                 targets.append(target)
             self.walk()
@@ -124,12 +134,14 @@ class LoadRuns:
         ascension: list[int],
         build_id: str,
         data_dir: str = "../data/runs/",
+        suffix: str = "",
     ):
         self.character = character
         self.ascension = ascension
         self.build_id = build_id
         self.data_dir = data_dir
         self.runs_path = []
+        self.suffix = suffix
 
     def get_runs_path(self):
         import glob
@@ -155,7 +167,7 @@ class LoadRuns:
             return None, None, None, None
 
         for run in runs:
-            logger.info(f"Processing run file: {run}")
+            logger.debug(f"Processing run file: {run}")
             try:
                 converter = RunToInputConverter.from_file(run)
                 x, y = converter.vectorize()
@@ -181,3 +193,17 @@ class LoadRuns:
             x_total, y_total, test_size=test_size, random_state=random_state
         )
         return x_train, x_test, y_train, y_test
+
+    def show_damage_taken_hist(self):
+
+        _, _, y_total, _ = self.get_train_test_set(test_size=0.1)
+        if y_total is None:
+            logger.error("No data to plot.")
+            return
+
+        plt.hist(y_total, bins=range(int(y_total.max()) + 1), alpha=0.75)
+        plt.title("Damage Taken Distribution")
+        plt.xlabel("Damage Taken")
+        plt.ylabel("Frequency")
+        plt.grid(axis="y", alpha=0.75)
+        plt.savefig(f"reports/damage_taken_histogram_{self.suffix}.png")

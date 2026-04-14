@@ -43,7 +43,8 @@ class TestCaseGenerator:
         if card_id.endswith("+"):
             raise ValueError(f"Card {card_id} is already upgraded.")
 
-        self.remove_card(card_id)
+        if not self.deck.correlated:
+            self.remove_card(card_id)
         upgraded_id = card_id + "+"
         self.add_card(upgraded_id)
 
@@ -155,11 +156,10 @@ class TestCaseGenerator:
                 label = "Original" if not added_labels else " + ".join(added_labels)
 
                 # Temporarily modify self.deck.cards
-                temp_deck_cards = original_deck_cards.copy()
+                self.deck.cards = original_deck_cards.copy()
                 for card_id in valid_combination:
-                    temp_deck_cards[card_id] = temp_deck_cards.get(card_id, 0) + 1
+                    self.deck.add(card_id)
 
-                self.deck.cards = temp_deck_cards
                 labels.append(label)
                 results.append(self.vectorize())
 

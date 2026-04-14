@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from sklearn.metrics import (
+    ConfusionMatrixDisplay,
     accuracy_score,
+    confusion_matrix,
     mean_absolute_error,
     mean_squared_error,
     r2_score,
@@ -156,6 +158,20 @@ class HurdleTrainer:
         plt.savefig(f"reports/hurdle_clf_separation_{self.suffix}.png")
         print(
             f"Saved classifier separation plot to reports/hurdle_clf_separation_{self.suffix}.png"
+        )
+
+        # 4. Confusion Matrix
+        cm = confusion_matrix(y_clf_true, y_clf_pred)
+        plt.figure(figsize=(8, 6))
+        disp = ConfusionMatrixDisplay(
+            confusion_matrix=cm, display_labels=["Flawless", "Damage"]
+        )
+        disp.plot(cmap="Blues", values_format="d")
+        plt.title("Hurdle Classifier: Confusion Matrix")
+        plt.grid(False)
+        plt.savefig(f"reports/hurdle_confusion_matrix_{self.suffix}.png")
+        print(
+            f"Saved confusion matrix to reports/hurdle_confusion_matrix_{self.suffix}.png"
         )
 
         plt.close("all")

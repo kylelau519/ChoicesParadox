@@ -23,9 +23,9 @@ logger = logging.getLogger(__name__)
 
 
 EXPERIMENT_PANEL = {
-    "group_all_curses": True,  # Flattens Injury, Ascender's Bane, etc., into "TOTAL_CURSES"
+    "group_all_curses": False,  # Flattens Injury, Ascender's Bane, etc., into "TOTAL_CURSES"
     "merge_upgrades": False,  # Treats "Strike+1" and "Strike" as the same feature
-    "count_potions_as_binary": True,  # 0 if empty, 1 if holding any potion
+    "count_potions_as_binary": False,  # 0 if empty, 1 if holding any potion
     "ignore_starter_relic": False,  # Removes Burning Blood/Ring of Snake from features
 }
 
@@ -196,11 +196,11 @@ class RunToInputConverter:
             self.walk()
         return inputs, targets
 
-    def vectorize(self):
+    def vectorize(self, vectorizer: DictVectorizer = GLOBAL_VECTORIZER):
         inputs, targets = self.run()
         if len(inputs) == 0:
             return None, None
-        x_run_matrix = GLOBAL_VECTORIZER.transform(inputs)
+        x_run_matrix = vectorizer.transform(inputs)
         y_run_array = np.array([t["damage_taken"] for t in targets])
         return x_run_matrix, y_run_array
 

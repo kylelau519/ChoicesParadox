@@ -2,9 +2,10 @@
 import itertools
 
 import scipy.sparse as sp
+
 from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, POTIONS, RELICS
 from run_preprocessor.deck import validate_card_id
-from stat_analysis.preprocess import GLOBAL_VECTORIZER, MASTER_SCHEMA, MasterSchema
+from stat_analysis.preprocess import GLOBAL_VECTORIZER, MasterSchema
 
 
 class TestCaseGenerator:
@@ -83,7 +84,7 @@ class TestCaseGenerator:
             )
         self.relics[relic_id] -= 1
 
-    def vectorize(self):
+    def vectorize(self, vectorizer=GLOBAL_VECTORIZER):
         if self.encounter is None:
             raise ValueError("Encounter must be set before vectorizing.")
         input_dict = {
@@ -94,7 +95,7 @@ class TestCaseGenerator:
             **self.relics,
             **self.encounter,
         }
-        return GLOBAL_VECTORIZER.transform([input_dict])
+        return vectorizer.transform([input_dict])
 
     def test_potions(self):
         potion_ids = list(self.potions.keys())

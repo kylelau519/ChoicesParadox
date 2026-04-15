@@ -1,4 +1,5 @@
 import logging
+import os
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -42,6 +43,8 @@ class RunDataCommon(Protocol):
 # Player Snapshot is a snapshot of the player's state
 # When a choice is given,this should contain all the info needed to do stat analysis
 # This is constructed from reader
+
+
 @dataclass
 class PlayerSnapshot:
     data: RunDataCommon
@@ -59,8 +62,14 @@ class PlayerSnapshot:
     current_act_floor: int = 1
     current_act: int = 1
     current_lumpsum_floor: int = 1
+    correlated: bool = False
 
-    def __init__(self, data: RunDataCommon, player_id: int = 1):
+    def __init__(
+        self, data: RunDataCommon, player_id: int = 1, correlated: bool | None = None
+    ):
+        if correlated is None:
+            correlated = os.getenv("CORRELATED_CARDS", "0") == "1"
+        self.correlated = correlated
         self.data = data
         self.player_id = player_id
 
@@ -95,7 +104,7 @@ class PlayerSnapshot:
         self.current_gold = player_stat["current_gold"]
 
         starter_deck = Player.generate_starter_deck(self.character)
-        self.deck = Deck(starter_deck)
+        self.deck = Deck(starter_deck, correlated=self.correlated)
         if data.run_metadata.ascension >= 5:
             self.deck.add("CARD.ASCENDERS_BANE")
         self.potions = {}
@@ -111,7 +120,7 @@ class PlayerSnapshot:
         self.current_hp = 0
         self.max_hp = 0
         self.current_gold = 0
-        self.deck = Deck([])
+        self.deck = Deck([], correlated=self.correlated)
         self.potions = {}
         self.relics = {}
         self.current_act_floor = 0
@@ -142,14 +151,16 @@ class PlayerSnapshot:
         if downgraded_cards is not None:
             for id in downgraded_cards:
                 upgraded = id + "+"
-                self.deck.remove(upgraded)
+                if not self.correlated:
+                    self.deck.remove(upgraded)
                 downgraded = id.removesuffix("+")
                 self.deck.add(downgraded)
 
         upgraded_cards = ps.get("upgraded_cards")
         if upgraded_cards is not None:
             for id in upgraded_cards:
-                self.deck.remove(id)
+                if not self.correlated:
+                    self.deck.remove(id)
                 self.deck.add(f"{id}+")
 
     def update_potions(self, ps: RawPlayerStats):

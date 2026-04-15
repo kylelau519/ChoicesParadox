@@ -9,6 +9,7 @@ from run_preprocessor.save_reader import CurrentSaveReader
 from run_preprocessor.snapshot import PlayerSnapshot
 from stat_analysis.preprocess import GLOBAL_VECTORIZER
 from stat_analysis.state_vectorizer import TestCaseGenerator
+from stat_analysis.train_hurdle import HurdleModel
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +26,12 @@ class Evaluator:
     @classmethod
     def from_file(cls, model_path: str):
         # Ensure HurdleModel is known to joblib
-        try:
-            from stat_analysis.train_hurdle import HurdleModel
-        except ImportError:
-            logger.debug("HurdleModel not found in stat_analysis.train_byhurdle")
+        # Some models were saved when train_hurdle.py was __main__
+        import sys
+
+        import stat_analysis.train_hurdle
+
+        sys.modules["__main__"].HurdleModel = stat_analysis.train_hurdle.HurdleModel
 
         model = joblib.load(model_path)
         return cls(model)

@@ -10,7 +10,8 @@ from stat_analysis.state_vectorizer import TestCaseGenerator
 
 class TestEval(unittest.TestCase):
     def test_showing_features(self):
-        eval = Evaluator("testfiles/xgb_model.joblib")
+        model = joblib.load("testfiles/xgb_model.joblib")
+        eval = Evaluator(model)
         features = eval.important_features(
             top_n=15,
             character="necrobinder",
@@ -22,7 +23,8 @@ class TestEval(unittest.TestCase):
         )
 
     def test_card_choices_changes(self):
-        eval = Evaluator("testfiles/xgb_model.joblib")
+        model = joblib.load("testfiles/xgb_model.joblib")
+        eval = Evaluator(model)
         run = CurrentSaveReader.from_file("testfiles/current_run.save")
         snapshot = PlayerSnapshot(run)
         generator = TestCaseGenerator(snapshot)

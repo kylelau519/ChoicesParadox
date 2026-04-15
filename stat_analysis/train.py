@@ -5,13 +5,11 @@ import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from stat_analysis.preprocess import GLOBAL_VECTORIZER, LoadRuns
 from xgboost import XGBRegressor
 
+from stat_analysis.preprocess import GLOBAL_VECTORIZER, LoadRuns
+
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
-)
 
 
 class Trainer:

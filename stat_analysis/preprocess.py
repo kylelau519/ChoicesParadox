@@ -11,14 +11,23 @@ from typing import Any, Protocol
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
-from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, POTIONS, RELICS
-from run_preprocessor.deck import Deck
-from run_preprocessor.run_reader import RawData
-from run_preprocessor.snapshot import PlayerSnapshot
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.model_selection import train_test_split
 
+from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, CURSE_CARDS, POTIONS, RELICS
+from run_preprocessor.deck import Deck
+from run_preprocessor.run_reader import RawData
+from run_preprocessor.snapshot import PlayerSnapshot
+
 logger = logging.getLogger(__name__)
+
+
+EXPERIMENT_PANEL = {
+    "group_all_curses": True,  # Flattens Injury, Ascender's Bane, etc., into "TOTAL_CURSES"
+    "merge_upgrades": False,  # Treats "Strike+1" and "Strike" as the same feature
+    "count_potions_as_binary": True,  # 0 if empty, 1 if holding any potion
+    "ignore_starter_relic": False,  # Removes Burning Blood/Ring of Snake from features
+}
 
 
 class MasterSchema(Protocol):
@@ -29,14 +38,44 @@ class MasterSchema(Protocol):
     relics: dict[str, int]
 
 
-MASTER_SCHEMA = {
-    "current_hp": 0,
-    "max_hp": 0,
-    **ALL_CARDS,
-    **POTIONS,
-    **RELICS,
-    **ALL_ENCOUNTERS,
-}
+def build_master_schema(experiment_config):
+    schema = {
+        "current_hp": 0,
+        "max_hp": 0,
+        **ALL_ENCOUNTERS,
+    }
+
+    # 1. Add Cards
+    for card_id in ALL_CARDS:
+        if experiment_config["group_all_curses"] and card_id in CURSE_CARDS:
+            continue
+        if experiment_config["merge_upgrades"] and card_id.endswith("+"):
+            continue
+        schema[card_id] = 0
+
+    if experiment_config["group_all_curses"]:
+        schema["TOTAL_CURSES"] = 0
+
+    # 2. Add Potions
+    for potion_id in POTIONS:
+        schema[potion_id] = 0
+
+    # 3. Add Relics
+    starter_relics = {
+        "RELIC.BURNING_BLOOD",
+        "RELIC.RING_OF_THE_SNAKE",
+        "RELIC.CRACKED_CORE",
+        "RELIC.PURE_WATER",
+    }
+    for relic_id in RELICS:
+        if experiment_config["ignore_starter_relic"] and relic_id in starter_relics:
+            continue
+        schema[relic_id] = 0
+
+    return schema
+
+
+MASTER_SCHEMA = build_master_schema(EXPERIMENT_PANEL)
 
 GLOBAL_VECTORIZER = DictVectorizer(sparse=True).fit([MASTER_SCHEMA])
 
@@ -59,12 +98,51 @@ class RunToInputConverter:
         # Player current stat
         input["current_hp"] = self.snapshot_now.current_hp
         input["max_hp"] = self.snapshot_now.max_hp
-        input.update(self.snapshot_now.deck.cards)
-        input.update(self.snapshot_now.potions)
-        input.update(self.snapshot_now.relics)
-        logger.debug(f"Deck: {self.snapshot_now.deck.cards}")
-        logger.debug(f"Relics: {self.snapshot_now.relics}")
-        logger.debug(f"Potions: {self.snapshot_now.potions}")
+
+        # --- FEATURE ENGINEERING based on EXPERIMENT_PANEL ---
+        raw_cards = self.snapshot_now.deck.cards.copy()
+
+        if EXPERIMENT_PANEL["group_all_curses"]:
+            total_curses = 0
+            for card_id in list(raw_cards.keys()):
+                if card_id in CURSE_CARDS:
+                    total_curses += raw_cards.pop(card_id)
+            raw_cards["TOTAL_CURSES"] = total_curses
+
+        if EXPERIMENT_PANEL["merge_upgrades"]:
+            for card_id in list(raw_cards.keys()):
+                if card_id.endswith("+"):
+                    base_id = card_id.removesuffix("+")
+                    raw_cards[base_id] = raw_cards.get(base_id, 0) + raw_cards.pop(
+                        card_id
+                    )
+
+        input.update(raw_cards)
+
+        raw_potions = self.snapshot_now.potions.copy()
+        if EXPERIMENT_PANEL["count_potions_as_binary"]:
+            for potion_id, count in raw_potions.items():
+                if count > 0:
+                    raw_potions[potion_id] = 1
+        input.update(raw_potions)
+
+        raw_relics = self.snapshot_now.relics.copy()
+        if EXPERIMENT_PANEL["ignore_starter_relic"]:
+            starter_relics = {
+                "RELIC.BURNING_BLOOD",
+                "RELIC.RING_OF_THE_SNAKE",
+                "RELIC.CRACKED_CORE",
+                "RELIC.BOUND_PHYLACTERY",
+                "RELIC.DIVINE_RIGHT",
+            }
+            for relic_id in starter_relics:
+                raw_relics.pop(relic_id, None)
+        input.update(raw_relics)
+        # --- END FEATURE ENGINEERING ---
+
+        logger.debug(f"Deck: {raw_cards}")
+        logger.debug(f"Relics: {raw_relics}")
+        logger.debug(f"Potions: {raw_potions}")
 
         # Ecnounter and the damage taken in the next encounter
         map_point = self.raw_data.map_point_history.flatten()[

@@ -43,8 +43,7 @@ class TestCaseGenerator:
         if card_id.endswith("+"):
             raise ValueError(f"Card {card_id} is already upgraded.")
 
-        if not self.deck.correlated:
-            self.remove_card(card_id)
+        self.remove_card(card_id)
         upgraded_id = card_id + "+"
         self.add_card(upgraded_id)
 

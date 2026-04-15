@@ -4,12 +4,12 @@ from typing import Any, Protocol
 
 import joblib
 import numpy as np
+
 from item_scrapper.items import *
 from run_preprocessor.save_reader import CurrentSaveReader
 from run_preprocessor.snapshot import PlayerSnapshot
 from stat_analysis.preprocess import GLOBAL_VECTORIZER
 from stat_analysis.state_vectorizer import TestCaseGenerator
-from stat_analysis.train_hurdle import HurdleModel
 
 logger = logging.getLogger(__name__)
 

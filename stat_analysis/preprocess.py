@@ -50,7 +50,7 @@ def build_master_schema(experiment_config):
     for card_id in ALL_CARDS:
         if experiment_config["group_all_curses"] and card_id in CURSE_CARDS:
             continue
-        # if experiment_config["merge_upgrades"] and card_id.endswith("+"):
+        # if experiment_config["correlate_upgrades"] and card_id.endswith("+"):
         #     continue
         schema[card_id] = 0
 

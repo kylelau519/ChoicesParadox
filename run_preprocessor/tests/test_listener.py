@@ -12,7 +12,7 @@ logging.basicConfig(
 # Load path from environment variable or a local untracked file
 SAVE_PATH = os.getenv("STS_SAVE_PATH")
 if not SAVE_PATH:
-    with open("save_path.txt", "r") as f:
+    with open("run_preprocessor/tests/save_path.txt", "r") as f:
         SAVE_PATH = f.read().strip()
 
 

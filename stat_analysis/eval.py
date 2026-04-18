@@ -1,16 +1,19 @@
 # Evaluator class for evaluating the performance of a trained model and answering questions about feature importance and predictions.
 import logging
+import sys
 from typing import Any, Protocol
 
 import joblib
 import numpy as np
 
+import stat_analysis.train_hurdle
 from item_scrapper.items import *
 from run_preprocessor.save_reader import CurrentSaveReader
 from run_preprocessor.snapshot import PlayerSnapshot
 from stat_analysis.preprocess import GLOBAL_VECTORIZER
 from stat_analysis.state_vectorizer import TestCaseGenerator
 
+sys.modules["__main__"].HurdleModel = stat_analysis.train_hurdle.HurdleModel
 logger = logging.getLogger(__name__)
 
 
@@ -25,26 +28,16 @@ class Evaluator:
 
     @classmethod
     def from_file(cls, model_path: str):
-        # Ensure HurdleModel is known to joblib
-        # Some models were saved when train_hurdle.py was __main__
-        import sys
-
-        import stat_analysis.train_hurdle
-
-        sys.modules["__main__"].HurdleModel = stat_analysis.train_hurdle.HurdleModel
-
         model = joblib.load(model_path)
         return cls(model)
 
     def predict(self, x):
         y_pred = self.model.predict(x)
-        # Handle HurdleModel returning a dict of predictions
         if isinstance(y_pred, dict):
             return {
                 k: v.flatten() if hasattr(v, "flatten") else v
                 for k, v in y_pred.items()
             }
-        # Handle cases where model might return something else than 1D array
         if hasattr(y_pred, "flatten"):
             y_pred = y_pred.flatten()
         return y_pred

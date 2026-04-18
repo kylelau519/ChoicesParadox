@@ -3,9 +3,9 @@ import itertools
 
 import scipy.sparse as sp
 
-from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, POTIONS, RELICS
+from item_scrapper.items import ALL_ENCOUNTERS, POTIONS, RELICS
 from run_preprocessor.deck import validate_card_id
-from stat_analysis.preprocess import GLOBAL_VECTORIZER, MasterSchema
+from stat_analysis.preprocess import EXPERIMENT_PANEL, GLOBAL_VECTORIZER, MasterSchema
 
 
 class TestCaseGenerator:
@@ -32,19 +32,20 @@ class TestCaseGenerator:
         self.max_hp = max_hp
 
     def remove_card(self, card_id: str):
-        # self.deck.remove already handles normalization and validation
+        if EXPERIMENT_PANEL["correlate_upgrades"] is True and card_id.endswith("+"):
+            base_name = card_id.rstrip("+")
+            self.deck.remove(base_name)
         self.deck.remove(card_id)
 
     def add_card(self, card_id: str):
-        # self.deck.add already handles normalization and validation
         self.deck.add(card_id)
 
     def upgrade_card(self, card_id: str):
-        # card_id should be something like "CARD.STRIKE_R"
         if card_id.endswith("+"):
             raise ValueError(f"Card {card_id} is already upgraded.")
 
-        self.remove_card(card_id)
+        if EXPERIMENT_PANEL["correlate_upgrades"] is False:
+            self.remove_card(card_id)
         upgraded_id = card_id + "+"
         self.add_card(upgraded_id)
 

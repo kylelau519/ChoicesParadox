@@ -65,8 +65,15 @@ class RawMapPointHistory:
             act_history: list[RawMapPoint] = []
             for map_point in act:
                 act_history.append(RawMapPoint.from_dict(map_point))
-            act_num_floors.append(len(act_history))
-            map_point_history.append(act_history)
+
+            # Strip trailing incomplete map points
+            while act_history and not act_history[-1].is_complete():
+                logger.debug("Stripping incomplete map point from end of act.")
+                act_history.pop()
+
+            if act_history:
+                act_num_floors.append(len(act_history))
+                map_point_history.append(act_history)
 
         return cls(map_point_history=map_point_history, act_num_floors=act_num_floors)
 

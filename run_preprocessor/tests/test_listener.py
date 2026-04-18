@@ -22,9 +22,6 @@ if not SAVE_PATH:
 def my_callback(file_path: str):
     """This function runs every time the file is updated."""
     reader = CurrentSaveReader.from_file(file_path)
-    if not reader.is_complete:
-        print("Incomplete save file detected, skipping...")
-        return False
 
     print("\n" + "=" * 30)
     print("🔔 SAVE FILE UPDATE DETECTED!")

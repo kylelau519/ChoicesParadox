@@ -41,6 +41,7 @@ state = GlobalState()
 def callback(file_path: str, eval_obj: Evaluator):
     try:
         reader = CurrentSaveReader.from_file(file_path)
+
         state.reader = reader
         state.evaluator = eval_obj
         state.last_update = time.time()
@@ -75,7 +76,7 @@ def main():
     logger.info(f"🚀 Starting listener on {SAVE_PATH}")
 
     # Change model path here to choose which model to use.
-    model_path = os.getenv("MODEL_PATH", "models/hurdle_model_corr_tweedie.joblib")
+    model_path = os.getenv("MODEL_PATH", "models/hurdle_model_corr_curse_tri.joblib")
     if not os.path.exists(model_path):
         model_path = "models/xgb_model.joblib"
         if not os.path.exists(model_path):

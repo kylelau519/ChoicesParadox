@@ -158,10 +158,6 @@ class CurrentSaveReader:
     def current_act(self) -> ActDetails:
         return self.acts[self.current_act_index]
 
-    @property
-    def is_complete(self) -> bool:
-        return self.map_point_history.is_complete()
-
 
 class SaveFileListener:
     def __init__(
@@ -197,10 +193,8 @@ class SaveFileListener:
                     file_seen = True
                     current_mtime = os.path.getmtime(self.file_path)
                     if current_mtime > self._last_mtime:
-                        # If callback returns False, it means the update was rejected (e.g. incomplete save)
-                        # and we should try again later without updating _last_mtime.
-                        if self.callback(*self.args, **self.kwargs) is not False:
-                            self._last_mtime = current_mtime
+                        self._last_mtime = current_mtime
+                        self.callback(*self.args, **self.kwargs)
                 elif file_seen:
                     logger.info("Save file deleted, stopping listener.")
                     self._stop_event.set()

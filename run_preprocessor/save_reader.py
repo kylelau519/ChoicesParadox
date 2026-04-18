@@ -4,15 +4,14 @@ import os
 import threading
 import time
 from dataclasses import dataclass
-from typing import Callable, cast
+from typing import Any, Callable, cast
 
 from run_preprocessor.types import CurrentSaveHistory, SaveAct, SaveMap
 
 from .mappoint import RawMapPointHistory
+from .player import RawPlayer
 
 logger = logging.getLogger(__name__)
-
-from typing import Any
 
 
 @dataclass
@@ -73,9 +72,6 @@ class ActDetails:
 
     def second_boss(self) -> str | None:
         return self.second_boss_id
-
-
-from .player import RawPlayer
 
 
 @dataclass

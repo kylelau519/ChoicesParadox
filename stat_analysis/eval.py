@@ -147,7 +147,7 @@ class Evaluator:
         if boss:
             boss_enc, boss_labels = generator.test_encounters([boss])
             boss_pred = self.predict(boss_enc)
-            logger.info(f"Predicted damage for boss encounter:")
+            logger.info("Predicted damage for boss encounter:")
             self.print_predicted(boss_pred, boss_labels)
         second_boss = current_act.second_boss()
         if second_boss:
@@ -155,7 +155,7 @@ class Evaluator:
                 [second_boss]
             )
             second_boss_pred = self.predict(second_boss_enc)
-            logger.info(f"Predicted damage for second boss encounter:")
+            logger.info("Predicted damage for second boss encounter:")
             self.print_predicted(second_boss_pred, second_boss_labels)
         logger.info("")
 

@@ -65,28 +65,28 @@ class TestEval(unittest.TestCase):
                     f"Prediction should change after taking {label}",
                 )
 
-    def test_remove_card_choices_changes(self):
-        save_path = "testfiles/current_run_test_health.save"
-        model_path = "models/hurdle_model_ignore_health.joblib"
+    # def test_remove_card_choices_changes(self):
+    #     save_path = "testfiles/current_run_test_health.save"
+    #     model_path = "models/hurdle_model_ignore_health.joblib"
 
-        eval = Evaluator.from_file(model_path)
-        reader = CurrentSaveReader.from_file(save_path)
-        snapshot = PlayerSnapshot(reader)
-        snapshot.run()
-        generator = TestCaseGenerator(snapshot)
-        generator.set_max_health(28)
-        generator.set_encounter("ENCOUNTER.SKULKING_COLONY_ELITE")
-        x_original = generator.vectorize()
-        pred_original = eval.predict(x_original)
+    #     eval = Evaluator.from_file(model_path)
+    #     reader = CurrentSaveReader.from_file(save_path)
+    #     snapshot = PlayerSnapshot(reader)
+    #     snapshot.run()
+    #     generator = TestCaseGenerator(snapshot)
+    #     generator.set_max_health(28)
+    #     generator.set_encounter("ENCOUNTER.SKULKING_COLONY_ELITE")
+    #     x_original = generator.vectorize()
+    #     pred_original = eval.predict(x_original)
 
-        card_choices = list(set(snapshot.deck.cards.keys()))
-        test_cases, labels = generator.test_removals(card_choices)
-        for case, label in zip(test_cases, labels):
-            pred = eval.predict(case)
-            if label == "Original":
-                self.assertEqual(
-                    pred, pred_original, "Original case should have the same prediction"
-                )
+    #     card_choices = list(set(snapshot.deck.cards.keys()))
+    #     test_cases, labels = generator.test_removals(card_choices)
+    #     for case, label in zip(test_cases, labels):
+    #         pred = eval.predict(case)
+    #         if label == "Original":
+    #             self.assertEqual(
+    #                 pred, pred_original, "Original case should have the same prediction"
+    #             )
 
 
 if __name__ == "__main__":

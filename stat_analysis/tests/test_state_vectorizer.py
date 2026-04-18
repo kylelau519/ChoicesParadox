@@ -1,10 +1,19 @@
 import unittest
 
 import numpy as np
+import sklearn
+from sklearn.feature_extraction import DictVectorizer
 
 from run_preprocessor.deck import Deck
-from stat_analysis.preprocess import GLOBAL_VECTORIZER
+from stat_analysis.preprocess import GLOBAL_VECTORIZER, build_master_schema
 from stat_analysis.state_vectorizer import TestCaseGenerator
+
+EXPERIMENT_PANEL = {
+    "group_all_curses": False,  # Flattens Injury, Ascender's Bane, etc., into "TOTAL_CURSES"
+    "merge_upgrades": False,  # Treats "Strike+1" and "Strike" as the same feature
+    "count_potions_as_binary": False,  # 0 if empty, 1 if holding any potion
+    "ignore_starter_relic": False,  # Removes Burning Blood/Ring of Snake from features
+}
 
 
 class MockDeck:
@@ -35,9 +44,10 @@ class TestStateVectorizer(unittest.TestCase):
         generator.set_encounter("ENCOUNTER.AXEBOTS_NORMAL")
 
         results, labels = generator.test_potions()
-        non_zero_idx = results.nonzero()[1]
-
-        features_name = GLOBAL_VECTORIZER.get_feature_names_out()
+        vectorizer = DictVectorizer(sparse=True).fit(
+            [build_master_schema(EXPERIMENT_PANEL)]
+        )
+        features_name = vectorizer.get_feature_names_out()
 
         # for result, label in zip(results, labels):
         #     non_zero_idx = result.nonzero()[1]

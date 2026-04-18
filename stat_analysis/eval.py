@@ -4,12 +4,12 @@ from typing import Any, Protocol
 
 import joblib
 import numpy as np
+
 from item_scrapper.items import *
 from run_preprocessor.save_reader import CurrentSaveReader
 from run_preprocessor.snapshot import PlayerSnapshot
 from stat_analysis.preprocess import GLOBAL_VECTORIZER
 from stat_analysis.state_vectorizer import TestCaseGenerator
-from stat_analysis.train_hurdle import HurdleModel
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,12 @@ class Evaluator:
 
     def predict(self, x):
         y_pred = self.model.predict(x)
+        # Handle HurdleModel returning a dict of predictions
+        if isinstance(y_pred, dict):
+            return {
+                k: v.flatten() if hasattr(v, "flatten") else v
+                for k, v in y_pred.items()
+            }
         # Handle cases where model might return something else than 1D array
         if hasattr(y_pred, "flatten"):
             y_pred = y_pred.flatten()
@@ -53,7 +59,7 @@ class Evaluator:
         show_colorless_cards=True,
         show_event_cards=True,
         show_encounters=True,
-        model_component=None,  # 'clf' or 'reg' for HurdleModel
+        model_component=None,  # 'clf', 'reg_mean', 'reg_low', or 'reg_high' for HurdleModel
     ):
         model = self.model
         if model_component and hasattr(self.model, model_component):
@@ -134,27 +140,41 @@ class Evaluator:
         # Predict damage for next encounters
         next_preds = self.predict(next_enc)
         logger.info("Predicted damage for next encounters:")
-        for label, pred in zip(enc_labels, next_preds):
-            logger.info(f"  {label.lower()}: {pred:.2f}")
+        for i, label in enumerate(enc_labels):
+            if isinstance(next_preds, dict):
+                logger.info(
+                    f"  {label.lower()}: {next_preds['mean'][i]:.2f}, 80%CL [{next_preds['low'][i]:.2f}, {next_preds['high'][i]:.2f}]"
+                )
+            else:
+                logger.info(f"  {label.lower()}: {next_preds[i]:.2f}")
         logger.info("")
 
         # Predict damage for remaining encounters
         logger.info("Predicted damage for remaining normal encounters:")
         remaining_preds = self.predict(remaining_enc)
-        for label, pred in zip(remaining_labels, remaining_preds):
-            logger.info(f"  {label.lower()}: {pred:.2f}")
+        for i, label in enumerate(remaining_labels):
+            if isinstance(remaining_preds, dict):
+                logger.info(
+                    f"  {label.lower()}: {remaining_preds['mean'][i]:.2f}, 80%CL [{remaining_preds['low'][i]:.2f}, {remaining_preds['high'][i]:.2f}]"
+                )
+            else:
+                logger.info(f"  {label.lower()}: {remaining_preds[i]:.2f}")
         logger.info("")
 
         # Predict damage for boss encounter if applicable
         boss = current_act.boss()
-        generator.test_encounters([boss] if boss else [])
         if boss:
             boss_enc, boss_labels = generator.test_encounters([boss])
             boss_pred = self.predict(boss_enc)
             logger.info(f"Predicted damage for boss encounter:")
-            logger.info(
-                f"  {boss.removeprefix('ENCOUNTER.').lower()}: {boss_pred[0]:.2f}"
-            )
+            if isinstance(boss_pred, dict):
+                logger.info(
+                    f"  {boss.removeprefix('ENCOUNTER.').lower()}: {boss_pred['mean'][0]:.2f}, 80%CL [{boss_pred['low'][0]:.2f}, {boss_pred['high'][0]:.2f}]"
+                )
+            else:
+                logger.info(
+                    f"  {boss.removeprefix('ENCOUNTER.').lower()}: {boss_pred[0]:.2f}"
+                )
         second_boss = current_act.second_boss()
         if second_boss:
             second_boss_enc, second_boss_labels = generator.test_encounters(
@@ -162,9 +182,14 @@ class Evaluator:
             )
             second_boss_pred = self.predict(second_boss_enc)
             logger.info(f"Predicted damage for second boss encounter:")
-            logger.info(
-                f"  {second_boss.removeprefix('ENCOUNTER.').lower()}: {second_boss_pred[0]:.2f}"
-            )
+            if isinstance(second_boss_pred, dict):
+                logger.info(
+                    f"  {second_boss.removeprefix('ENCOUNTER.').lower()}: {second_boss_pred['mean'][0]:.2f}, 80%CL [{second_boss_pred['low'][0]:.2f}, {second_boss_pred['high'][0]:.2f}]"
+                )
+            else:
+                logger.info(
+                    f"  {second_boss.removeprefix('ENCOUNTER.').lower()}: {second_boss_pred[0]:.2f}"
+                )
         logger.info("")
 
     def evaluate_game_options(self, reader: CurrentSaveReader, test_func, items):
@@ -187,22 +212,36 @@ class Evaluator:
 
         unique_combats = sorted([c for c in remaining_combats if c])
 
-        total_damages = {}  # label -> total_damage
+        # label -> {mean: sum, low: sum, high: sum} OR label -> total_damage
+        results = {}
 
-        # Initial labels to setup total_damages dict
         if not unique_combats:
             return {}
 
         generator.set_encounter(unique_combats[0])
         _, labels = test_func(generator, items)
+
+        # Initial probe to see if model returns dict
+        dummy_x = GLOBAL_VECTORIZER.transform([{}])
+        dummy_pred = self.predict(dummy_x)
+        is_dict = isinstance(dummy_pred, dict)
+
         for label in labels:
-            total_damages[label] = 0.0
+            if is_dict:
+                results[label] = {"mean": 0.0, "low": 0.0, "high": 0.0}
+            else:
+                results[label] = 0.0
 
         for combat in unique_combats:
             generator.set_encounter(combat)
             cases, labels = test_func(generator, items)
             preds = self.predict(cases)
             for idx, label in enumerate(labels):
-                total_damages[label] += preds[idx]
+                if is_dict:
+                    results[label]["mean"] += preds["mean"][idx]
+                    results[label]["low"] += preds["low"][idx]
+                    results[label]["high"] += preds["high"][idx]
+                else:
+                    results[label] += preds[idx]
 
-        return total_damages
+        return results

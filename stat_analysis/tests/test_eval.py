@@ -5,12 +5,21 @@ import joblib
 from run_preprocessor.save_reader import CurrentSaveReader
 from run_preprocessor.snapshot import PlayerSnapshot
 from stat_analysis.eval import Evaluator
+from stat_analysis.preprocess import GLOBAL_VECTORIZER, build_master_schema
 from stat_analysis.state_vectorizer import TestCaseGenerator
+
+EXPERIMENT_PANEL = {
+    "group_all_curses": False,  # Flattens Injury, Ascender's Bane, etc., into "TOTAL_CURSES"
+    "merge_upgrades": False,  # Treats "Strike+1" and "Strike" as the same feature
+    "count_potions_as_binary": False,  # 0 if empty, 1 if holding any potion
+    "ignore_starter_relic": False,  # Removes Burning Blood/Ring of Snake from features
+}
 
 
 class TestEval(unittest.TestCase):
     def test_showing_features(self):
-        eval = Evaluator("testfiles/xgb_model.joblib")
+        model = joblib.load("testfiles/xgb_model_dont_touch.joblib")
+        eval = Evaluator(model)
         features = eval.important_features(
             top_n=15,
             character="necrobinder",
@@ -22,7 +31,8 @@ class TestEval(unittest.TestCase):
         )
 
     def test_card_choices_changes(self):
-        eval = Evaluator("testfiles/xgb_model.joblib")
+        model = joblib.load("testfiles/xgb_model_dont_touch.joblib")
+        eval = Evaluator(model)
         run = CurrentSaveReader.from_file("testfiles/current_run.save")
         snapshot = PlayerSnapshot(run)
         generator = TestCaseGenerator(snapshot)

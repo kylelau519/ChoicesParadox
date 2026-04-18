@@ -7,8 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class Deck:
-    def __init__(self, cards: list[Card], correlated: bool = False):
-        self.correlated = correlated
+    def __init__(self, cards: list[Card]):
         self.cards: dict[str, int] = {}  # card id to count
         for card in cards:
             # card.id is usually already formatted like CARD.BASH
@@ -47,16 +46,10 @@ class Deck:
     def add(self, card_id: str):
         card_id = validate_card_id(card_id)
         self._increment(card_id)
-        if self.correlated and card_id.endswith("+"):
-            base_id = card_id.removesuffix("+")
-            self._increment(base_id)
 
     def remove(self, card_id: str):
         card_id = validate_card_id(card_id)
         self._decrement(card_id)
-        if self.correlated and card_id.endswith("+"):
-            base_id = card_id.removesuffix("+")
-            self._decrement(base_id)
 
     def add_card(self, card: Card):
         deck_key = card.id

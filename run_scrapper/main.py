@@ -2,7 +2,7 @@ import json
 import os
 from typing import Any
 
-from scraper import STS2RunsScraper, SpireCodexScraper
+from .scraper import SpireCodexScraper, STS2RunsScraper
 
 
 def save_data(runs: list[dict[str, Any]]):
@@ -28,6 +28,7 @@ def save_data(runs: list[dict[str, Any]]):
         with open(path, "w") as f:
             print(f"Saving {path}")
             json.dump(run, f, indent=4)
+
 
 def main():
     codex = SpireCodexScraper()

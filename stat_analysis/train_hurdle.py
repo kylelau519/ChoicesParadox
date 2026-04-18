@@ -13,8 +13,9 @@ from sklearn.metrics import (
     mean_squared_error,
     r2_score,
 )
-from stat_analysis.preprocess import LoadRuns
 from xgboost import XGBClassifier, XGBRegressor
+
+from stat_analysis.preprocess import LoadRuns
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -23,17 +24,26 @@ logging.basicConfig(
 
 
 class HurdleModel:
-    def __init__(self, clf, reg):
+    def __init__(self, clf, reg_mean, reg_low, reg_high):
         self.clf = clf
-        self.reg = reg
+        self.reg_mean = reg_mean
+        self.reg_low = reg_low
+        self.reg_high = reg_high
 
     def predict(self, X):
         # P(y > 0)
         p_damage = self.clf.predict_proba(X)[:, 1]
-        # E[y | y > 0]
-        expected_damage = self.reg.predict(X)
-        # Combined prediction: E[y] = P(y > 0) * E[y | y > 0]
-        return p_damage * expected_damage
+        # E[y | y > 0] for different cases
+        mean_cond = self.reg_mean.predict(X)
+        low_cond = self.reg_low.predict(X)
+        high_cond = self.reg_high.predict(X)
+
+        # Combined predictions: E[y] = P(y > 0) * E[y | y > 0]
+        return {
+            "mean": p_damage * mean_cond,
+            "low": p_damage * low_cond,
+            "high": p_damage * high_cond,
+        }
 
 
 class HurdleTrainer:
@@ -67,16 +77,36 @@ class HurdleTrainer:
         y_reg_train,
         clf_params,
         reg_params,
+        low_alpha=0.1,
+        high_alpha=0.9,
     ):
         print(f"Training Classifier with params: {clf_params}")
         clf = XGBClassifier(**clf_params)
         clf.fit(x_clf_train, y_clf_train)
 
-        print(f"Training Regressor with params: {reg_params}")
-        reg = XGBRegressor(**reg_params)
-        reg.fit(x_reg_train, y_reg_train)
+        print(f"Training Mean Regressor with params: {reg_params}")
+        reg_mean = XGBRegressor(**reg_params)
+        reg_mean.fit(x_reg_train, y_reg_train)
 
-        self.model = HurdleModel(clf, reg)
+        print(f"Training Low Regressor (alpha={low_alpha})")
+        low_params = reg_params.copy()
+        low_params["objective"] = "reg:quantileerror"
+        low_params["quantile_alpha"] = low_alpha
+        # Tweedie specific params might not be compatible with quantile
+        low_params.pop("tweedie_variance_power", None)
+        reg_low = XGBRegressor(**low_params)
+        reg_low.fit(x_reg_train, y_reg_train)
+
+        print(f"Training High Regressor (alpha={high_alpha})")
+        high_params = reg_params.copy()
+        high_params["objective"] = "reg:quantileerror"
+        high_params["quantile_alpha"] = high_alpha
+        high_params["max_depth"] = 4
+        high_params.pop("tweedie_variance_power", None)
+        reg_high = XGBRegressor(**high_params)
+        reg_high.fit(x_reg_train, y_reg_train)
+
+        self.model = HurdleModel(clf, reg_mean, reg_low, reg_high)
         return self.model
 
     def save_model(self, path=None):
@@ -89,33 +119,44 @@ class HurdleTrainer:
     def test_model(self, x_test, y_test, model_path=None):
         if model_path is None:
             model_path = self.model_path
-            # Ensure HurdleModel is in the namespace when loading
             self.model = joblib.load(model_path)
         if self.model is None:
             raise ValueError("Model has not been trained yet.")
 
         # For testing, we use the combined test set (all samples)
-        y_pred = self.model.predict(x_test)
+        preds = self.model.predict(x_test)
+        y_pred_mean = preds["mean"]
+        y_pred_low = preds["low"]
+        y_pred_high = preds["high"]
 
         # Classifier scores (probabilities for class 1: damage taken)
-        # Shifted to -1 to 1 range: 0 -> -1, 1 -> 1
         y_clf_probs = self.model.clf.predict_proba(x_test)[:, 1]
         y_clf_scores = 2 * y_clf_probs - 1
-
-        # Actual labels for separation analysis
         y_clf_true = (y_test > 0).astype(int)
 
-        # Calculate metrics
-        mae = mean_absolute_error(y_test, y_pred)
-        mse = mean_squared_error(y_test, y_pred)
+        # Calculate metrics for mean prediction
+        mae = mean_absolute_error(y_test, y_pred_mean)
+        mse = mean_squared_error(y_test, y_pred_mean)
         rmse = mse**0.5
-        r2 = r2_score(y_test, y_pred)
+        r2 = r2_score(y_test, y_pred_mean)
 
-        print("\n--- Hurdle Model Regression Report ---")
+        print("\n--- Hurdle Model Regression Report (Mean) ---")
         print(f"Mean Absolute Error (MAE): {mae:.4f}")
         print(f"Mean Squared Error (MSE):  {mse:.4f}")
         print(f"Root Mean Squared Error (RMSE): {rmse:.4f}")
         print(f"R-squared (R2): {r2:.4f}")
+
+        # Coverage for low/high
+        damage_mask = y_test > 0
+
+        if np.sum(damage_mask) > 0:
+            coverage = np.mean(
+                (y_test[damage_mask] >= y_pred_low[damage_mask])
+                & (y_test[damage_mask] <= y_pred_high[damage_mask])
+            )
+        else:
+            coverage = 0.0  # Fallback if test set somehow has zero damage taken
+        print(f"True Interval Coverage (Low to High): {coverage:.4f}")
 
         # Also report classifier performance
         y_clf_pred = self.model.clf.predict(x_test)
@@ -126,22 +167,34 @@ class HurdleTrainer:
         os.makedirs("reports", exist_ok=True)
         sns.set_theme(style="whitegrid")
 
-        # 1. Residuals
-        residuals = y_pred - y_test
+        # 1. Residuals (Mean)
+        residuals = y_pred_mean - y_test
         plt.figure(figsize=(10, 6))
         sns.histplot(residuals, kde=True, color="green")
-        plt.title("Hurdle Model: Histogram of Residuals")
+        plt.title("Hurdle Model: Histogram of Residuals (Mean)")
         plt.savefig(f"reports/hurdle_residuals_{self.suffix}.png")
 
-        # 2. Predicted vs Actual
+        # 2. Predicted vs Actual (Mean) with error bars or area?
         plt.figure(figsize=(10, 6))
-        plt.scatter(y_test, y_pred, alpha=0.3)
+        plt.scatter(y_test, y_pred_mean, alpha=0.3, label="Mean Prediction")
+        # Sample some points to show low/high intervals
+        idx = np.random.choice(len(y_test), min(100, len(y_test)), replace=False)
+        plt.vlines(
+            y_test[idx],
+            y_pred_low[idx],
+            y_pred_high[idx],
+            color="gray",
+            alpha=0.2,
+            label="Low-High Interval",
+        )
+
         plt.plot(
             [y_test.min(), y_test.max()], [y_test.min(), y_test.max()], "r--", lw=2
         )
         plt.xlabel("Actual")
         plt.ylabel("Predicted")
-        plt.title("Hurdle Model: Predicted vs Actual")
+        plt.title("Hurdle Model: Predicted (Mean) vs Actual")
+        plt.legend()
         plt.savefig(f"reports/hurdle_pred_vs_actual_{self.suffix}.png")
 
         # 3. Classifier Separation (-1 to 1 score)
@@ -170,30 +223,24 @@ class HurdleTrainer:
         plt.ylabel("Frequency")
         plt.legend()
         plt.savefig(f"reports/hurdle_clf_separation_{self.suffix}.png")
-        print(
-            f"Saved classifier separation plot to reports/hurdle_clf_separation_{self.suffix}.png"
-        )
 
         # 4. Confusion Matrix
-        cm = confusion_matrix(y_clf_true, y_clf_pred)
+        cm = confusion_matrix(y_clf_true, y_clf_pred, normalize="true")
         plt.figure(figsize=(8, 6))
         disp = ConfusionMatrixDisplay(
             confusion_matrix=cm, display_labels=["Flawless", "Damage"]
         )
-        disp.plot(cmap="Blues", values_format="d")
-        plt.title("Hurdle Classifier: Confusion Matrix")
+        disp.plot(cmap="Blues", values_format=".2%")
+        plt.title("Hurdle Classifier: Confusion Matrix (%)")
         plt.grid(False)
         plt.savefig(f"reports/hurdle_confusion_matrix_{self.suffix}.png")
-        print(
-            f"Saved confusion matrix to reports/hurdle_confusion_matrix_{self.suffix}.png"
-        )
 
         plt.close("all")
-        return y_pred
+        return y_pred_mean
 
 
 def main():
-    trainer = HurdleTrainer(ascension=[3, 4, 5, 6, 7, 8, 9, 10], suffix="corr_tweedie")
+    trainer = HurdleTrainer(ascension=[6, 7, 8, 9, 10], suffix="corr_curse_tri")
     data = trainer.load_data()
     if data[0] is None:
         print("Error: No data found.")
@@ -221,9 +268,9 @@ def main():
 
     reg_params = {
         "objective": "reg:tweedie",
-        "max_depth": 8,
-        "n_estimators": 2000,
-        "learning_rate": 0.05,
+        "max_depth": 6,
+        "n_estimators": 1500,
+        "learning_rate": 0.03,
         "tree_method": "hist",
     }
 

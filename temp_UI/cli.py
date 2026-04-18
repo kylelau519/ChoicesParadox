@@ -35,22 +35,39 @@ class IdCompleter:
 
 def evaluate_and_print_results(eval_obj, state_reader, test_func, items, title):
     print(f"\n--- {title} Evaluation ---")
-    total_damages = eval_obj.evaluate_game_options(state_reader, test_func, items)
-    if not total_damages:
+    results = eval_obj.evaluate_game_options(state_reader, test_func, items)
+    if not results:
         print("No combats to evaluate against.")
         return
 
-    sorted_results = sorted(total_damages.items(), key=lambda x: x[1])
+    # Check if results are dicts (mean, low, high)
+    first_val = next(iter(results.values()))
+    is_dict = isinstance(first_val, dict)
+
+    if is_dict:
+        sorted_results = sorted(results.items(), key=lambda x: x[1]["mean"])
+    else:
+        sorted_results = sorted(results.items(), key=lambda x: x[1])
 
     logger.info(f"\nTotal predicted damage for remaining combats ({title}):")
-    for label, total_dmg in sorted_results[:3]:  # Top 3
-        logger.info(f"  {label}: {total_dmg:.2f}")
+    for label, val in sorted_results[:3]:  # Top 3
+        if is_dict:
+            logger.info(
+                f"  {label}: {val['mean']:.2f}, 80%CL [{val['low']:.2f}, {val['high']:.2f}]"
+            )
+        else:
+            logger.info(f"  {label}: {val:.2f}")
 
     if len(sorted_results) > 3:
         if len(sorted_results) > 4:
             logger.info("  ...")
-        for label, total_dmg in sorted_results[-1:]:  # Worst 1
-            logger.info(f"  {label}: {total_dmg:.2f}")
+        for label, val in sorted_results[-1:]:  # Worst 1
+            if is_dict:
+                logger.info(
+                    f"  {label}: {val['mean']:.2f}, 80%CL [{val['low']:.2f}, {val['high']:.2f}]"
+                )
+            else:
+                logger.info(f"  {label}: {val:.2f}")
 
     suggested = sorted_results[0][0]
     if suggested == "Original":

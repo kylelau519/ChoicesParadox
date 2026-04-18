@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 
 EXPERIMENT_PANEL = {
-    "group_all_curses": False,  # Flattens Injury, Ascender's Bane, etc., into "TOTAL_CURSES"
-    "merge_upgrades": False,  # Treats "Strike+1" and "Strike" as the same feature
+    "group_all_curses": True,  # Flattens Injury, Ascender's Bane, etc., into "TOTAL_CURSES"
+    "merge_upgrades": True,  # Treats "Strike+1" and "Strike" as the same feature
     "count_potions_as_binary": False,  # 0 if empty, 1 if holding any potion
     "ignore_starter_relic": False,  # Removes Burning Blood/Ring of Snake from features
 }

@@ -41,6 +41,16 @@ class RawMapPoint:
             f"get_player_stat: player_id {player_id} not found in player_stats"
         )
 
+    def is_complete(self) -> bool:
+        """Check if the map point has complete player stats."""
+        if not self.player_stats:
+            return False
+        for ps in self.player_stats:
+            # max_hp should never be 0 in a valid game state
+            if ps.get("max_hp", 0) <= 0:
+                return False
+        return True
+
 
 @dataclass
 class RawMapPointHistory:
@@ -65,3 +75,10 @@ class RawMapPointHistory:
 
     def flatten(self) -> list[RawMapPoint]:
         return [mp for act in self.map_point_history for mp in act]
+
+    def is_complete(self) -> bool:
+        """Check if the last map point in history is complete."""
+        flattened = self.flatten()
+        if not flattened:
+            return True  # No history yet (e.g., just started)
+        return flattened[-1].is_complete()

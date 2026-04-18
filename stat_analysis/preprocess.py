@@ -24,9 +24,10 @@ logger = logging.getLogger(__name__)
 
 EXPERIMENT_PANEL = {
     "group_all_curses": True,  # Flattens Injury, Ascender's Bane, etc., into "TOTAL_CURSES"
-    "merge_upgrades": True,  # Treats "Strike+1" and "Strike" as the same feature
+    "correlate_upgrades": True,  # Treats "Strike+1" and "Strike" as the same feature
     "count_potions_as_binary": False,  # 0 if empty, 1 if holding any potion
     "ignore_starter_relic": False,  # Removes Burning Blood/Ring of Snake from features
+    "ignore_health": True,  # Remove current_health and max_health
 }
 
 
@@ -49,8 +50,8 @@ def build_master_schema(experiment_config):
     for card_id in ALL_CARDS:
         if experiment_config["group_all_curses"] and card_id in CURSE_CARDS:
             continue
-        if experiment_config["merge_upgrades"] and card_id.endswith("+"):
-            continue
+        # if experiment_config["correlate_upgrades"] and card_id.endswith("+"):
+        #     continue
         schema[card_id] = 0
 
     if experiment_config["group_all_curses"]:
@@ -109,12 +110,12 @@ class RunToInputConverter:
                     total_curses += raw_cards.pop(card_id)
             raw_cards["TOTAL_CURSES"] = total_curses
 
-        if EXPERIMENT_PANEL["merge_upgrades"]:
+        if EXPERIMENT_PANEL["correlate_upgrades"]:
             for card_id in list(raw_cards.keys()):
                 if card_id.endswith("+"):
                     base_id = card_id.removesuffix("+")
-                    raw_cards[base_id] = raw_cards.get(base_id, 0) + raw_cards.pop(
-                        card_id
+                    raw_cards[base_id] = raw_cards.get(base_id, 0) + raw_cards.get(
+                        card_id, 0
                     )
 
         input.update(raw_cards)
@@ -138,6 +139,10 @@ class RunToInputConverter:
             for relic_id in starter_relics:
                 raw_relics.pop(relic_id, None)
         input.update(raw_relics)
+
+        if EXPERIMENT_PANEL["ignore_health"]:
+            input.update({"current_hp": 0, "max_hp": 0})
+
         # --- END FEATURE ENGINEERING ---
 
         logger.debug(f"Deck: {raw_cards}")

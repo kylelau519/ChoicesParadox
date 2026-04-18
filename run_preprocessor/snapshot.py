@@ -62,10 +62,8 @@ class PlayerSnapshot:
     current_act_floor: int = 1
     current_act: int = 1
     current_lumpsum_floor: int = 1
-    
-    def __init__(
-        self, data: RunDataCommon, player_id: int = 1
-    ):
+
+    def __init__(self, data: RunDataCommon, player_id: int = 1):
         self.data = data
         self.player_id = player_id
 
@@ -98,14 +96,14 @@ class PlayerSnapshot:
         self.current_hp = player_stat["current_hp"]
         self.max_hp = player_stat["max_hp"]
         self.current_gold = player_stat["current_gold"]
+        self.potions = {}
+        self.relics = {}
 
         starter_deck = Player.generate_starter_deck(self.character)
+        starter_relic = Player.generate_starter_relic(self.character)
         self.deck = Deck(starter_deck)
         if data.run_metadata.ascension >= 5:
             self.deck.add("CARD.ASCENDERS_BANE")
-        self.potions = {}
-        starter_relic = Player.generate_starter_relic(self.character)
-        self.relics = {}
         self.relics[starter_relic] = 1
 
         self.update_deck(player_stat)
@@ -127,19 +125,16 @@ class PlayerSnapshot:
         cards_gained = ps.get("cards_gained")
         if cards_gained is not None:
             for card in cards_gained:
-                # TODO: add enchantmented card logic
                 self.deck.add_card(Card.from_dict(card))
 
         cards_removed = ps.get("cards_removed")
         if cards_removed is not None:
             for card in cards_removed:
-                # TODO: add remove enchantmented card logic
                 self.deck.remove_card(Card.from_dict(card))
 
         cards_transformed = ps.get("cards_transformed")
         if cards_transformed is not None:
             for transform in cards_transformed:
-                # TODO: add transform enchantmented card logic
                 self.deck.remove_card(Card.from_dict(transform["original_card"]))
                 self.deck.add_card(Card.from_dict(transform["final_card"]))
 
@@ -170,8 +165,6 @@ class PlayerSnapshot:
         if potion_used is not None:
             for potion in potion_used:
                 self.potions[potion] = self.potions.get(potion, 0) - 1
-
-                # TODO: track used potions
 
         potion_discarded = ps.get("potion_discarded")
         if potion_discarded is not None:

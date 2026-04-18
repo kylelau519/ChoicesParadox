@@ -49,7 +49,7 @@ def evaluate_and_print_results(eval_obj, state_reader, test_func, items, title):
     else:
         sorted_results = sorted(results.items(), key=lambda x: x[1])
 
-    logger.info(f"\nTotal predicted damage for remaining combats ({title}):")
+    logger.info(f"\nWeighted damage score for remaining combats ({title}):")
     for label, val in sorted_results[:3]:  # Top 3
         if is_dict:
             logger.info(

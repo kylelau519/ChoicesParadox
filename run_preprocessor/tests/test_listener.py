@@ -22,6 +22,7 @@ if not SAVE_PATH:
 def my_callback(file_path: str):
     """This function runs every time the file is updated."""
     reader = CurrentSaveReader.from_file(file_path)
+
     print("\n" + "=" * 30)
     print("🔔 SAVE FILE UPDATE DETECTED!")
     print(f"Current Act Index: {reader.current_act_index}")

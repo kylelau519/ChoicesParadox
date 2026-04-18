@@ -48,11 +48,6 @@ class TestStateVectorizer(unittest.TestCase):
             [build_master_schema(EXPERIMENT_PANEL)]
         )
         features_name = vectorizer.get_feature_names_out()
-
-        # for result, label in zip(results, labels):
-        #     non_zero_idx = result.nonzero()[1]
-        #     print(f"Combination: {label}, Features: {features_name[non_zero_idx]}")
-        #
         for name in features_name[results[3].nonzero()[1]]:
             self.assertNotEqual(name.startswith("POTION."), True)
 

@@ -10,7 +10,7 @@ from stat_analysis.preprocess import RunToInputConverter, build_master_schema
 
 class TestPreprocess(unittest.TestCase):
     def test_load_data_from_file(self):
-        converter = RunToInputConverter.from_file("testfiles/regent_a0_win.run")
+        converter = RunToInputConverter.from_file("testfiles/silent_a0_win.run")
         x_matrix, y_matrix = converter.vectorize()
 
     def test_schema_conversion(self):

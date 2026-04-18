@@ -21,9 +21,7 @@ class TestHealthEvaluation(unittest.TestCase):
 
         model_path = "models/hurdle_model_ignore_health.joblib"
         if not os.path.exists(model_path):
-            model_path = "models/xgb_model.joblib"
-            if not os.path.exists(model_path):
-                self.skipTest("No model found for testing")
+            self.skipTest(f"Model file {model_path} not found")
 
         logger.info(f"Using model: {model_path}")
         evaluator = Evaluator.from_file(model_path)

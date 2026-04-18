@@ -46,7 +46,6 @@ class RawMapPoint:
         if not self.player_stats:
             return False
         for ps in self.player_stats:
-            # max_hp should never be 0 in a valid game state
             if ps.get("max_hp", 0) <= 0:
                 return False
         return True

@@ -133,25 +133,13 @@ class Evaluator:
         # Predict damage for next encounters
         next_preds = self.predict(next_enc)
         logger.info("Predicted damage for next encounters:")
-        for i, label in enumerate(enc_labels):
-            if isinstance(next_preds, dict):
-                logger.info(
-                    f"  {label.lower()}: {next_preds['mean'][i]:.2f}, 80%CL [{next_preds['low'][i]:.2f}, {next_preds['high'][i]:.2f}]"
-                )
-            else:
-                logger.info(f"  {label.lower()}: {next_preds[i]:.2f}")
+        self.print_predicted(next_preds, enc_labels)
         logger.info("")
 
         # Predict damage for remaining encounters
         logger.info("Predicted damage for remaining normal encounters:")
         remaining_preds = self.predict(remaining_enc)
-        for i, label in enumerate(remaining_labels):
-            if isinstance(remaining_preds, dict):
-                logger.info(
-                    f"  {label.lower()}: {remaining_preds['mean'][i]:.2f}, 80%CL [{remaining_preds['low'][i]:.2f}, {remaining_preds['high'][i]:.2f}]"
-                )
-            else:
-                logger.info(f"  {label.lower()}: {remaining_preds[i]:.2f}")
+        self.print_predicted(remaining_preds, remaining_labels)
         logger.info("")
 
         # Predict damage for boss encounter if applicable
@@ -160,14 +148,7 @@ class Evaluator:
             boss_enc, boss_labels = generator.test_encounters([boss])
             boss_pred = self.predict(boss_enc)
             logger.info(f"Predicted damage for boss encounter:")
-            if isinstance(boss_pred, dict):
-                logger.info(
-                    f"  {boss.removeprefix('ENCOUNTER.').lower()}: {boss_pred['mean'][0]:.2f}, 80%CL [{boss_pred['low'][0]:.2f}, {boss_pred['high'][0]:.2f}]"
-                )
-            else:
-                logger.info(
-                    f"  {boss.removeprefix('ENCOUNTER.').lower()}: {boss_pred[0]:.2f}"
-                )
+            self.print_predicted(boss_pred, boss_labels)
         second_boss = current_act.second_boss()
         if second_boss:
             second_boss_enc, second_boss_labels = generator.test_encounters(
@@ -175,15 +156,18 @@ class Evaluator:
             )
             second_boss_pred = self.predict(second_boss_enc)
             logger.info(f"Predicted damage for second boss encounter:")
-            if isinstance(second_boss_pred, dict):
+            self.print_predicted(second_boss_pred, second_boss_labels)
+        logger.info("")
+
+    def print_predicted(self, preds, labels):
+        for i, label in enumerate(labels):
+            label = label.replace("_", " ").title()
+            if isinstance(preds, dict):
                 logger.info(
-                    f"  {second_boss.removeprefix('ENCOUNTER.').lower()}: {second_boss_pred['mean'][0]:.2f}, 80%CL [{second_boss_pred['low'][0]:.2f}, {second_boss_pred['high'][0]:.2f}]"
+                    f"  {label:.<30} Predicted: {preds['mean'][i]:>6.2f}, 80% CL: [{preds['low'][i]:.2f}, {preds['high'][i]:.2f}]"
                 )
             else:
-                logger.info(
-                    f"  {second_boss.removeprefix('ENCOUNTER.').lower()}: {second_boss_pred[0]:.2f}"
-                )
-        logger.info("")
+                logger.info(f"  {label:.<30} Predicted: {preds[i]:.2f}")
 
     def evaluate_game_options(self, reader: CurrentSaveReader, test_func, items):
         """

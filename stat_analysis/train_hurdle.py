@@ -240,7 +240,7 @@ class HurdleTrainer:
 
 
 def main():
-    trainer = HurdleTrainer(ascension=[6, 7, 8, 9, 10], suffix="corr_curse_tri")
+    trainer = HurdleTrainer(ascension=[6, 7, 8, 9, 10], suffix="ignore_health")
     data = trainer.load_data()
     if data[0] is None:
         print("Error: No data found.")

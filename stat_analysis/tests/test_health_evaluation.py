@@ -19,7 +19,7 @@ class TestHealthEvaluation(unittest.TestCase):
         if not os.path.exists(save_path):
             self.skipTest(f"Save file {save_path} not found")
 
-        model_path = "models/hurdle_model_corr_curse_tri.joblib"
+        model_path = "models/hurdle_model_ignore_health.joblib"
         if not os.path.exists(model_path):
             model_path = "models/xgb_model.joblib"
             if not os.path.exists(model_path):

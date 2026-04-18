@@ -27,6 +27,7 @@ EXPERIMENT_PANEL = {
     "merge_upgrades": True,  # Treats "Strike+1" and "Strike" as the same feature
     "count_potions_as_binary": False,  # 0 if empty, 1 if holding any potion
     "ignore_starter_relic": False,  # Removes Burning Blood/Ring of Snake from features
+    "ignore_health": True,  # Remove current_health and max_health
 }
 
 
@@ -138,6 +139,10 @@ class RunToInputConverter:
             for relic_id in starter_relics:
                 raw_relics.pop(relic_id, None)
         input.update(raw_relics)
+
+        if EXPERIMENT_PANEL["ignore_health"]:
+            input.update({"current_hp": 0, "max_hp": 0})
+
         # --- END FEATURE ENGINEERING ---
 
         logger.debug(f"Deck: {raw_cards}")

@@ -8,6 +8,8 @@ from run_preprocessor.deck import validate_card_id
 from stat_analysis.preprocess import EXPERIMENT_PANEL, GLOBAL_VECTORIZER, MasterSchema
 
 
+# generator cannot use the preprocess functionality for experiment_panel because preprocess change from snapshot
+# generator also changes from snapshot, so similar logic should be implemented differently
 class TestCaseGenerator:
     def __init__(self, snapshot: MasterSchema):
         self.current_hp = snapshot.current_hp
@@ -38,6 +40,9 @@ class TestCaseGenerator:
         self.deck.remove(card_id)
 
     def add_card(self, card_id: str):
+        if EXPERIMENT_PANEL["correlate_upgrades"] is True and card_id.endswith("+"):
+            base_name = card_id.rstrip("+")
+            self.deck.add(base_name)
         self.deck.add(card_id)
 
     def upgrade_card(self, card_id: str):
@@ -159,7 +164,7 @@ class TestCaseGenerator:
                 # Temporarily modify self.deck.cards
                 self.deck.cards = original_deck_cards.copy()
                 for card_id in valid_combination:
-                    self.deck.add(card_id)
+                    self.add_card(card_id)
 
                 labels.append(label)
                 results.append(self.vectorize())
@@ -221,14 +226,10 @@ class TestCaseGenerator:
         original_deck_cards = self.deck.cards.copy()
         if card_id.endswith("+"):
             return None, None
-        try:
-            self.upgrade_card(card_id)
-            result = self.vectorize()
-            label = f"Upgraded {card_id.replace('CARD.', '')}"
-        except Exception:
-            return None, None
-        finally:
-            self.deck.cards = original_deck_cards  # restore
+        self.upgrade_card(card_id)
+        result = self.vectorize()
+        label = f"Upgraded {card_id.replace('CARD.', '')}"
+        self.deck.cards = original_deck_cards  # restore
         return result, label
 
     def test_upgrades(self, card_ids: list[str]):

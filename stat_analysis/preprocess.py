@@ -46,12 +46,9 @@ def build_master_schema(experiment_config):
         **ALL_ENCOUNTERS,
     }
 
-    # 1. Add Cards
     for card_id in ALL_CARDS:
         if experiment_config["group_all_curses"] and card_id in CURSE_CARDS:
             continue
-        # if experiment_config["correlate_upgrades"] and card_id.endswith("+"):
-        #     continue
         schema[card_id] = 0
 
     if experiment_config["group_all_curses"]:
@@ -96,7 +93,6 @@ class RunToInputConverter:
     # This assumed snapshot_next is at an encounter, with the damage taken applied
     def convert_snapshot(self):
         input: dict[str, int] = {}
-        # Player current stat
         input["current_hp"] = self.snapshot_now.current_hp
         input["max_hp"] = self.snapshot_now.max_hp
 
@@ -175,11 +171,10 @@ class RunToInputConverter:
 
     def walk(self):
         num_total_floors = len(self.raw_data.map_point_history.flatten())
-        if self.snapshot_now.current_lumpsum_floor < num_total_floors:
-            self.snapshot_now.walk()
-        else:
+        if self.snapshot_now.current_lumpsum_floor >= num_total_floors:
             logger.error("Snapshot walk attempt exceeded total floors.")
-            raise Exception("walk: snapshot_now walking too much")
+            raise Exception
+        self.snapshot_now.walk()
         if self.snapshot_next.current_lumpsum_floor < num_total_floors:
             self.snapshot_next.walk()
 

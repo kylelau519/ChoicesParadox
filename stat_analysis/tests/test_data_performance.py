@@ -6,8 +6,6 @@ from stat_analysis.preprocess import LoadRuns
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-# logger = logging.getLogger("stat_analysis.preprocess")
-# logger.setLevel(logging.DEBUG)
 
 
 class TestLoader(unittest.TestCase):

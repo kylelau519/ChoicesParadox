@@ -43,8 +43,6 @@ class RunDataCommon(Protocol):
 # Player Snapshot is a snapshot of the player's state
 # When a choice is given,this should contain all the info needed to do stat analysis
 # This is constructed from reader
-
-
 @dataclass
 class PlayerSnapshot:
     data: RunDataCommon

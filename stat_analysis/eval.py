@@ -201,47 +201,105 @@ class Evaluator:
         snapshot.run()
         generator = TestCaseGenerator(snapshot)
 
-        remaining_combats = set(
-            current_act.remaining_normal_encounters()
-            + current_act.remaining_elite_encounters()
+        # Categorize unique encounters
+        unique_normals = sorted(
+            list(set(c for c in current_act.remaining_normal_encounters() if c))
         )
-        if current_act.boss():
-            remaining_combats.add(current_act.boss())
-        if current_act.second_boss():
-            remaining_combats.add(current_act.second_boss())
+        unique_elites = sorted(
+            list(set(c for c in current_act.remaining_elite_encounters() if c))
+        )
+        unique_bosses = sorted(
+            list(set(c for c in [current_act.boss(), current_act.second_boss()] if c))
+        )
 
-        unique_combats = sorted([c for c in remaining_combats if c])
-
-        # label -> {mean: sum, low: sum, high: sum} OR label -> total_damage
-        results = {}
-
-        if not unique_combats:
+        all_unique = sorted(list(set(unique_normals + unique_elites + unique_bosses)))
+        if not all_unique:
             return {}
 
-        generator.set_encounter(unique_combats[0])
+        # Initial probe to see if model returns dict and get labels
+        generator.set_encounter(all_unique[0])
         _, labels = test_func(generator, items)
-
-        # Initial probe to see if model returns dict
         dummy_x = GLOBAL_VECTORIZER.transform([{}])
         dummy_pred = self.predict(dummy_x)
         is_dict = isinstance(dummy_pred, dict)
 
+        # Calculate average damage for each category
+        category_results = {
+            "normal": {},  # label -> damage
+            "elite": {},
+            "boss": {},
+        }
+
+        def process_category(encounters, cat_name):
+            if not encounters:
+                return
+            for combat in encounters:
+                generator.set_encounter(combat)
+                cases, labels = test_func(generator, items)
+                preds = self.predict(cases)
+                for idx, label in enumerate(labels):
+                    if label not in category_results[cat_name]:
+                        if is_dict:
+                            category_results[cat_name][label] = {
+                                "mean": 0.0,
+                                "low": 0.0,
+                                "high": 0.0,
+                            }
+                        else:
+                            category_results[cat_name][label] = 0.0
+
+                    if is_dict:
+                        category_results[cat_name][label]["mean"] += preds["mean"][
+                            idx
+                        ] / len(encounters)
+                        category_results[cat_name][label]["low"] += preds["low"][
+                            idx
+                        ] / len(encounters)
+                        category_results[cat_name][label]["high"] += preds["high"][
+                            idx
+                        ] / len(encounters)
+                    else:
+                        category_results[cat_name][label] += preds[idx] / len(
+                            encounters
+                        )
+
+        process_category(unique_normals, "normal")
+        process_category(unique_elites, "elite")
+        process_category(unique_bosses, "boss")
+
+        # Combine using weights: 35% Boss, 35% Elite, 30% Normal
+        weights = {"boss": 0.35, "elite": 0.35, "normal": 0.30}
+
+        # Re-normalize weights if some categories are missing
+        active_weight_sum = sum(
+            weights[cat] for cat in weights if category_results[cat]
+        )
+        if active_weight_sum == 0:
+            return {}
+
+        final_results = {}
         for label in labels:
             if is_dict:
-                results[label] = {"mean": 0.0, "low": 0.0, "high": 0.0}
+                final_results[label] = {"mean": 0.0, "low": 0.0, "high": 0.0}
             else:
-                results[label] = 0.0
+                final_results[label] = 0.0
 
-        for combat in unique_combats:
-            generator.set_encounter(combat)
-            cases, labels = test_func(generator, items)
-            preds = self.predict(cases)
-            for idx, label in enumerate(labels):
-                if is_dict:
-                    results[label]["mean"] += preds["mean"][idx]
-                    results[label]["low"] += preds["low"][idx]
-                    results[label]["high"] += preds["high"][idx]
-                else:
-                    results[label] += preds[idx]
+            for cat, weight in weights.items():
+                if category_results[cat]:
+                    norm_weight = weight / active_weight_sum
+                    if is_dict:
+                        final_results[label]["mean"] += (
+                            category_results[cat][label]["mean"] * norm_weight
+                        )
+                        final_results[label]["low"] += (
+                            category_results[cat][label]["low"] * norm_weight
+                        )
+                        final_results[label]["high"] += (
+                            category_results[cat][label]["high"] * norm_weight
+                        )
+                    else:
+                        final_results[label] += (
+                            category_results[cat][label] * norm_weight
+                        )
 
-        return results
+        return final_results

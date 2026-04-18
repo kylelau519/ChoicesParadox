@@ -41,7 +41,10 @@ class Deck:
             # We don't necessarily want to crash in all cases, but for now we keep it
             raise Exception(f"deck.remove tried to remove {card_id} that doesn't exist")
         new_num_card = prev_num_card - 1
-        self.cards[card_id] = new_num_card
+        if new_num_card == 0:
+            del self.cards[card_id]
+        else:
+            self.cards[card_id] = new_num_card
 
     def add(self, card_id: str):
         card_id = validate_card_id(card_id)

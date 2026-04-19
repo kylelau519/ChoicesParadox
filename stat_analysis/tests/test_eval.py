@@ -37,7 +37,7 @@ class TestEval(unittest.TestCase):
 
     def test_card_choices_changes(self):
         save_path = "testfiles/current_run_test_health.save"
-        model_path = "models/hurdle_model_ignore_health.joblib"
+        model_path = "models/hurdle_model_testfile.joblib"
 
         eval = Evaluator.from_file(model_path)
 

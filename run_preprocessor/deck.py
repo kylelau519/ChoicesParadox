@@ -63,3 +63,8 @@ class Deck:
         if upgrade_lv is not None and upgrade_lv == 1:
             deck_key += "+"
         self.remove(deck_key)
+
+    def copy(self):
+        new_deck = Deck([])
+        new_deck.cards = self.cards.copy()
+        return new_deck

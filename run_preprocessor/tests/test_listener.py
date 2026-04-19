@@ -12,11 +12,8 @@ logging.basicConfig(
 # Load path from environment variable or a local untracked file
 SAVE_PATH = os.getenv("STS_SAVE_PATH")
 if not SAVE_PATH:
-    try:
-        with open("save_path.txt", "r") as f:
-            SAVE_PATH = f.read().strip()
-    except FileNotFoundError:
-        SAVE_PATH = "current_run.save"  # Default fallback
+    with open("run_preprocessor/tests/save_path.txt", "r") as f:
+        SAVE_PATH = f.read().strip()
 
 
 def my_callback(file_path: str):

@@ -48,11 +48,6 @@ class TestStateVectorizer(unittest.TestCase):
             [build_master_schema(EXPERIMENT_PANEL)]
         )
         features_name = vectorizer.get_feature_names_out()
-
-        # for result, label in zip(results, labels):
-        #     non_zero_idx = result.nonzero()[1]
-        #     print(f"Combination: {label}, Features: {features_name[non_zero_idx]}")
-        #
         for name in features_name[results[3].nonzero()[1]]:
             self.assertNotEqual(name.startswith("POTION."), True)
 
@@ -115,6 +110,36 @@ class TestStateVectorizer(unittest.TestCase):
 
         # Verify restoration of original deck (which had Strike_Regent)
         self.assertEqual(generator.deck.cards, {"CARD.STRIKE_REGENT": 1})
+
+    def test_correlate_upgrades(self):
+        from stat_analysis.preprocess import EXPERIMENT_PANEL
+
+        original_val = EXPERIMENT_PANEL["correlate_upgrades"]
+        EXPERIMENT_PANEL["correlate_upgrades"] = True
+        try:
+            snapshot = MockSnapshot()
+            # We use cards that are in ALL_CARDS to avoid issues with GLOBAL_VECTORIZER
+            # Strike_Silent and Strike_Silent+ are common
+            snapshot.deck.cards = {"CARD.STRIKE_SILENT": 3, "CARD.STRIKE_SILENT+": 1}
+            generator = TestCaseGenerator(snapshot)  # type: ignore
+            generator.set_encounter("ENCOUNTER.AXEBOTS_NORMAL")
+
+            result = generator.vectorize()
+            features_name = GLOBAL_VECTORIZER.get_feature_names_out()
+
+            # Find index of Strike_Silent, Strike_Silent+, and TOTAL_UPGRADES
+            strike_idx = np.where(features_name == "CARD.STRIKE_SILENT")[0][0]
+            strike_plus_idx = np.where(features_name == "CARD.STRIKE_SILENT+")[0][0]
+            total_upgrades_idx = np.where(features_name == "TOTAL_UPGRADES")[0][0]
+
+            # Check values in the result (it's a sparse matrix, so we use toarray)
+            vector = result.toarray()[0]
+            self.assertEqual(vector[strike_idx], 4)
+            self.assertEqual(vector[strike_plus_idx], 1)
+            self.assertEqual(vector[total_upgrades_idx], 1)
+
+        finally:
+            EXPERIMENT_PANEL["correlate_upgrades"] = original_val
 
 
 if __name__ == "__main__":

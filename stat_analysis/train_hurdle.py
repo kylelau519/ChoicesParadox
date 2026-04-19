@@ -286,10 +286,13 @@ def main():
 
     reg_params = {
         "objective": "reg:tweedie",
-        "max_depth": 6,
-        "n_estimators": 1500,
-        "learning_rate": 0.03,
+        "max_depth": 7,  # INCREASED: Gives the tree more "boxes"
+        "n_estimators": 1500,  # Kept high
+        "learning_rate": 0.03,  # Kept low
         "tree_method": "hist",
+        "min_child_weight": 2,  # Prevents aggressive pruning of rare upgrades
+        "colsample_bytree": 0.7,  # Forces the model to look at different cards
+        "subsample": 0.8,  # Adds randomness to prevent overfitting noise
     }
 
     # Train

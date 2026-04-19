@@ -8,7 +8,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Global definition of versions to use across the project
-SUPPORTED_BUILD_IDS = ["0.102", "0.103"]
+SUPPORTED_BUILD_IDS = ["0.103"]
 
 # Base directory for the project (root)
 BASE_DIR = Path(__file__).resolve().parent.parent

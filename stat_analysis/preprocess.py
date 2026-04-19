@@ -28,8 +28,9 @@ EXPERIMENT_PANEL = {
     "count_potions_as_binary": False,  # 0 if empty, 1 if holding any potion
     "ignore_starter_relic": False,  # Removes Burning Blood/Ring of Snake from features
     "ignore_health": True,  # Remove current_health and max_health
-    "total_upgrades": True,  # Show total upgrades feature
+    "total_upgrades": False,  # Show total upgrades feature
     "total_deck_size": True,  # Show total deck size feature
+    "starter_ratio": False,  # Show the strike+defend / total cards ratio for each character
 }
 
 
@@ -61,6 +62,9 @@ def build_master_schema(experiment_config):
 
     if experiment_config["total_deck_size"]:
         schema["TOTAL_DECK_SIZE"] = 0
+
+    if experiment_config["starter_ratio"]:
+        schema["STARTER_RATIO"] = 0.0
 
     # 2. Add Potions
     for potion_id in POTIONS:
@@ -128,6 +132,31 @@ class RunToInputConverter:
                     )
         if EXPERIMENT_PANEL["total_upgrades"]:
             raw_cards["TOTAL_UPGRADES"] = total_upgrades
+
+        if EXPERIMENT_PANEL["starter_ratio"]:
+            starter_ids = {
+                "CARD.STRIKE_IRONCLAD",
+                "CARD.DEFEND_IRONCLAD",
+                "CARD.STRIKE_SILENT",
+                "CARD.DEFEND_SILENT",
+                "CARD.STRIKE_DEFECT",
+                "CARD.DEFEND_DEFECT",
+                "CARD.STRIKE_REGENT",
+                "CARD.DEFEND_REGENT",
+                "CARD.STRIKE_NECROBINDER",
+                "CARD.DEFEND_NECROBINDER",
+            }
+            total_starter = 0
+            # snapshot_now.deck.cards is the original deck before correlate_upgrades transformation
+            for card_id, count in self.snapshot_now.deck.cards.items():
+                base_id = card_id.rstrip("+")
+                if base_id in starter_ids:
+                    total_starter += count
+
+            total_cards = sum(self.snapshot_now.deck.cards.values())
+            raw_cards["STARTER_RATIO"] = (
+                total_starter / total_cards if total_cards > 0 else 0.0
+            )
 
         input.update(raw_cards)
 

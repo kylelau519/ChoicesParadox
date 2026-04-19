@@ -158,9 +158,32 @@ def main():
                     if EXPERIMENT_PANEL["correlate_upgrades"]:
                         print(f"  {'TOTAL_UPGRADES':.<35} {total_upgrades}")
 
+                    if EXPERIMENT_PANEL["starter_ratio"]:
+                        starter_ids = {
+                            "CARD.STRIKE_IRONCLAD",
+                            "CARD.DEFEND_IRONCLAD",
+                            "CARD.STRIKE_SILENT",
+                            "CARD.DEFEND_SILENT",
+                            "CARD.STRIKE_DEFECT",
+                            "CARD.DEFEND_DEFECT",
+                            "CARD.STRIKE_REGENT",
+                            "CARD.DEFEND_REGENT",
+                            "CARD.STRIKE_NECROBINDER",
+                            "CARD.DEFEND_NECROBINDER",
+                        }
+                        total_starter = 0
+                        for card_id, count in snapshot.deck.cards.items():
+                            base_id = card_id.rstrip("+")
+                            if base_id in starter_ids:
+                                total_starter += count
+                        total_cards = sum(snapshot.deck.cards.values())
+                        ratio = total_starter / total_cards if total_cards > 0 else 0.0
+                        print(f"  {'STARTER_RATIO':.<35} {ratio:.4f}")
+
                     print(
                         f"\nTotal Unique: {len(active_cards)} | Total Cards: {sum(v for _, v in snapshot.deck.cards.items())}"
                     )
+
                     print("---------------------------\n")
                 else:
                     print("No save file loaded yet.")

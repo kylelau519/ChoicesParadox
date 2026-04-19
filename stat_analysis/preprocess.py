@@ -29,7 +29,7 @@ EXPERIMENT_PANEL = {
     "ignore_starter_relic": False,  # Removes Burning Blood/Ring of Snake from features
     "ignore_health": True,  # Remove current_health and max_health
     "total_upgrades": False,  # Show total upgrades feature
-    "total_deck_size": True,  # Show total deck size feature
+    "total_deck_size": False,  # Show total deck size feature
     "starter_ratio": False,  # Show the strike+defend / total cards ratio for each character
 }
 

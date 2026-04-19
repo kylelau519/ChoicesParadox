@@ -54,6 +54,9 @@ def build_master_schema(experiment_config):
     if experiment_config["group_all_curses"]:
         schema["TOTAL_CURSES"] = 0
 
+    if experiment_config["correlate_upgrades"]:
+        schema["TOTAL_UPGRADES"] = 0
+
     # 2. Add Potions
     for potion_id in POTIONS:
         schema[potion_id] = 0
@@ -107,12 +110,15 @@ class RunToInputConverter:
             raw_cards["TOTAL_CURSES"] = total_curses
 
         if EXPERIMENT_PANEL["correlate_upgrades"]:
+            total_upgrades = 0
             for card_id in list(raw_cards.keys()):
                 if card_id.endswith("+"):
+                    total_upgrades += raw_cards.get(card_id, 0)
                     base_id = card_id.removesuffix("+")
                     raw_cards[base_id] = raw_cards.get(base_id, 0) + raw_cards.get(
                         card_id, 0
                     )
+            raw_cards["TOTAL_UPGRADES"] = total_upgrades
 
         input.update(raw_cards)
 

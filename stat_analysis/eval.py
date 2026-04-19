@@ -129,11 +129,20 @@ class Evaluator:
         remaining_enc, remaining_labels = generator.test_encounters(
             current_act.remaining_normal_encounters()
         )
+        remaining_elite_enc, remaining_elite_labels = generator.test_encounters(
+            list(set(current_act.remaining_elite_encounters()))
+        )
 
         # Predict damage for next encounters
         next_preds = self.predict(next_enc)
         logger.info("Predicted damage for next encounters:")
         self.print_predicted(next_preds, enc_labels)
+        logger.info("")
+
+        # Predict damage for remaining elite encounters
+        logger.info("Predicted damage for remaining elite encounters:")
+        elite_preds = self.predict(remaining_elite_enc)
+        self.print_predicted(elite_preds, remaining_elite_labels)
         logger.info("")
 
         # Predict damage for remaining encounters

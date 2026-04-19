@@ -14,7 +14,7 @@ class TestCaseGenerator:
     def __init__(self, snapshot: MasterSchema):
         self.current_hp = snapshot.current_hp
         self.max_hp = snapshot.max_hp
-        self.deck = snapshot.deck
+        self.deck = snapshot.deck.copy()  # make a copy to modify
         self.potions = snapshot.potions
         self.relics = snapshot.relics
         self.encounter = None
@@ -34,23 +34,15 @@ class TestCaseGenerator:
         self.max_hp = max_hp
 
     def remove_card(self, card_id: str):
-        if EXPERIMENT_PANEL["correlate_upgrades"] is True and card_id.endswith("+"):
-            base_name = card_id.rstrip("+")
-            self.deck.remove(base_name)
         self.deck.remove(card_id)
 
     def add_card(self, card_id: str):
-        if EXPERIMENT_PANEL["correlate_upgrades"] is True and card_id.endswith("+"):
-            base_name = card_id.rstrip("+")
-            self.deck.add(base_name)
         self.deck.add(card_id)
 
     def upgrade_card(self, card_id: str):
         if card_id.endswith("+"):
             raise ValueError(f"Card {card_id} is already upgraded.")
-
-        if EXPERIMENT_PANEL["correlate_upgrades"] is False:
-            self.remove_card(card_id)
+        self.remove_card(card_id)
         upgraded_id = card_id + "+"
         self.add_card(upgraded_id)
 
@@ -93,6 +85,16 @@ class TestCaseGenerator:
     def vectorize(self, vectorizer=GLOBAL_VECTORIZER):
         if self.encounter is None:
             raise ValueError("Encounter must be set before vectorizing.")
+        if EXPERIMENT_PANEL["correlate_upgrades"]:
+            total_upgrades = 0
+            for card_id in list(self.deck.cards.keys()):
+                if card_id.endswith("+"):
+                    total_upgrades += self.deck.cards[card_id]
+                    base_id = card_id.removesuffix("+")
+                    self.deck.cards[base_id] = (
+                        self.deck.cards.get(base_id, 0) + self.deck.cards[card_id]
+                    )
+            self.deck.cards["TOTAL_UPGRADES"] = total_upgrades
         input_dict = {
             "current_hp": self.current_hp,
             "max_hp": self.max_hp,

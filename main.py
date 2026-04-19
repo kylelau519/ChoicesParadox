@@ -76,11 +76,7 @@ def main():
     logger.info(f"🚀 Starting listener on {SAVE_PATH}")
 
     # Change model path here to choose which model to use.
-    model_path = os.getenv("MODEL_PATH", "models/hurdle_model_ignore_health.joblib")
-    if not os.path.exists(model_path):
-        model_path = "models/xgb_model.joblib"
-        if not os.path.exists(model_path):
-            model_path = "testfiles/xgb_model.joblib"
+    model_path = os.getenv("MODEL_PATH", "models/hurdle_model_testfile.joblib")
 
     logger.info(f"Using model: {model_path}")
     evaluator = Evaluator.from_file(model_path)

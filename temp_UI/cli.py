@@ -1,9 +1,7 @@
 import logging
 import readline
-import time
 
-from item_scrapper.items import ALL_CARDS, RELICS, validate_relic_id
-from run_preprocessor.deck import validate_card_id
+from item_scrapper.items import ALL_CARDS, RELICS, validate_card_id, validate_relic_id
 from run_preprocessor.snapshot import PlayerSnapshot
 
 logger = logging.getLogger(__name__)
@@ -40,21 +38,10 @@ def evaluate_and_print_results(eval_obj, state_reader, test_func, items, title):
         return
 
     # Check if results are dicts (mean, low, high)
-    first_val = next(iter(results.values()))
-    is_dict = isinstance(first_val, dict)
-
-    if is_dict:
-        sorted_results = sorted(results.items(), key=lambda x: x[1]["mean"])
-    else:
-        sorted_results = sorted(results.items(), key=lambda x: x[1])
+    sorted_results = sorted(results.items(), key=lambda x: x[1]["mean"])
 
     print(f"\nWeighted damage score for remaining combats ({title}):")
-
-    # Header
-    if is_dict:
-        header = f"{'Rank':<5} | {'Option':<35} | {'Mean':<8} | {'80% CL Range':<20}"
-    else:
-        header = f"{'Rank':<5} | {'Option':<35} | {'Score':<8}"
+    header = f"{'Rank':<5} | {'Option':<35} | {'Mean':<8} | {'80% CL Range':<20}"
 
     print(header)
     print("-" * len(header))
@@ -65,13 +52,8 @@ def evaluate_and_print_results(eval_obj, state_reader, test_func, items, title):
         if display_label == "Original":
             display_label = "Skip / No Change"
 
-        if is_dict:
-            cl_range = f"[{val['low']:>6.2f}, {val['high']:>6.2f}]"
-            print(
-                f"{i:<5} | {display_label:<35} | {val['mean']:>8.2f} | {cl_range:<20}"
-            )
-        else:
-            print(f"{i:<5} | {display_label:<35} | {val:>8.2f}")
+        cl_range = f"[{val['low']:>6.2f}, {val['high']:>6.2f}]"
+        print(f"{i:<5} | {display_label:<35} | {val['mean']:>8.2f} | {cl_range:<20}")
 
     suggested = sorted_results[0][0]
     if suggested == "Original":

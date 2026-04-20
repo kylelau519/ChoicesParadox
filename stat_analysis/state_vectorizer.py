@@ -1,11 +1,27 @@
 # A helper class to vectorize snapshot and able to modify the state for case study
 import itertools
+from typing import Protocol
 
 import scipy.sparse as sp
 
-from item_scrapper.items import ALL_ENCOUNTERS, POTIONS, RELICS
-from run_preprocessor.deck import validate_card_id
-from stat_analysis.preprocess import EXPERIMENT_PANEL, GLOBAL_VECTORIZER, MasterSchema
+from config import EXPERIMENT_PANEL
+from item_scrapper.items import (
+    ALL_ENCOUNTERS,
+    POTIONS,
+    RELICS,
+    validate_card_id,
+    validate_relic_id,
+)
+from run_preprocessor.deck import Deck
+from stat_analysis.preprocess import GLOBAL_VECTORIZER
+
+
+class MasterSchema(Protocol):
+    current_hp: int
+    max_hp: int
+    deck: Deck
+    potions: dict[str, int]
+    relics: dict[str, int]
 
 
 # generator cannot use the preprocess functionality for experiment_panel because preprocess change from snapshot
@@ -223,14 +239,7 @@ class TestCaseGenerator:
         # Generate combinations of adding 0 up to 'pick' relics from the pool
         for r in range(pick + 1):
             for combination in itertools.combinations(relic_ids, r):
-                valid_combination = [c.strip().upper() for c in combination]
-                valid_combination = [
-                    f"RELIC.{c}" if not c.startswith("RELIC.") else c
-                    for c in valid_combination
-                ]
-                for relic_id in valid_combination:
-                    if relic_id not in RELICS:
-                        raise ValueError(f"Relic ID '{relic_id}' is not valid.")
+                valid_combination = [validate_relic_id(c) for c in combination]
                 added_labels = [c.replace("RELIC.", "") for c in valid_combination]
                 label = "Original" if not added_labels else " + ".join(added_labels)
 

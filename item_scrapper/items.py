@@ -3,17 +3,10 @@
 
 import json
 import logging
-from pathlib import Path
+
+from config import DATA_ITEMS_DIR, SCRAPPER_DIR, SUPPORTED_BUILD_IDS
 
 logger = logging.getLogger(__name__)
-
-# Global definition of versions to use across the project
-SUPPORTED_BUILD_IDS = ["0.102", "0.103"]
-
-# Base directory for the project (root)
-BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_ITEMS_DIR = BASE_DIR / "data" / "items"
-SCRAPPER_DIR = BASE_DIR / "item_scrapper"
 
 
 def load_all_versions(filename):
@@ -35,14 +28,11 @@ def load_all_versions(filename):
         for v_dir in version_dirs:
             filepath = v_dir / filename
             if filepath.exists():
-                try:
-                    with open(filepath, "r") as f:
-                        items = json.load(f)
-                        for item in items:
-                            # Use ID as key to merge versions, keeping latest version of the same ID
-                            all_items[item["id"]] = item
-                except Exception as e:
-                    logger.error(f"Error loading {filepath}: {e}")
+                with open(filepath, "r") as f:
+                    items = json.load(f)
+                    for item in items:
+                        # Use ID as key to merge versions, keeping latest version of the same ID
+                        all_items[item["id"]] = item
 
     # 2. Load from item_scrapper directory as fallback/additional
     scrapper_file = SCRAPPER_DIR / filename

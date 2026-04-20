@@ -15,7 +15,7 @@ from sklearn.metrics import (
 )
 from xgboost import XGBClassifier, XGBRegressor
 
-from item_scrapper.items import SUPPORTED_BUILD_IDS
+from config import ASCENSION, CHARACTER, CHARACTER_CONFIGS, SUPPORTED_BUILD_IDS
 from stat_analysis.preprocess import LoadRuns
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class HurdleTrainer:
         self,
         build_id=None,
         character="*",
-        ascension=None,
+        ascension=ASCENSION,
         suffix="",
         model_path=None,
     ):
@@ -74,7 +74,7 @@ class HurdleTrainer:
         else:
             self.build_id = build_id
         self.character = character
-        self.ascension = ascension or [7, 8, 9, 10]
+        self.ascension = ascension
         self.model = None
         self.suffix = suffix
         if model_path:
@@ -136,7 +136,7 @@ class HurdleTrainer:
     def test_model(self, x_test, y_test, model_path=None):
         if model_path is None:
             model_path = self.model_path
-            self.model = joblib.load(model_path)
+        self.model = joblib.load(model_path)
         if self.model is None:
             raise ValueError("Model has not been trained yet.")
 
@@ -157,7 +157,7 @@ class HurdleTrainer:
         rmse = mse**0.5
         r2 = r2_score(y_test, y_pred_mean)
 
-        print("\n--- Hurdle Model Regression Report (Mean) ---")
+        print(f"\n--- Model Regression Report (Mean) {self.suffix}---")
         print(f"Mean Absolute Error (MAE): {mae:.4f}")
         print(f"Mean Squared Error (MSE):  {mse:.4f}")
         print(f"Root Mean Squared Error (RMSE): {rmse:.4f}")
@@ -188,7 +188,7 @@ class HurdleTrainer:
         residuals = y_pred_mean - y_test
         plt.figure(figsize=(10, 6))
         sns.histplot(residuals, kde=True, color="green")
-        plt.title("Hurdle Model: Histogram of Residuals (Mean)")
+        plt.title(f"Model {self.suffix}: Histogram of Residuals (Mean)")
         plt.savefig(f"reports/hurdle_residuals_{self.suffix}.png")
 
         # 2. Predicted vs Actual (Mean) with error bars or area?
@@ -210,7 +210,7 @@ class HurdleTrainer:
         )
         plt.xlabel("Actual")
         plt.ylabel("Predicted")
-        plt.title("Hurdle Model: Predicted (Mean) vs Actual")
+        plt.title(f"Model {self.suffix}: Predicted (Mean) vs Actual")
         plt.legend()
         plt.savefig(f"reports/hurdle_pred_vs_actual_{self.suffix}.png")
 
@@ -257,9 +257,8 @@ class HurdleTrainer:
 
 
 def main():
-    character = "necrobinder"
     trainer = HurdleTrainer(
-        ascension=[7, 8, 9, 10], suffix=character, character=character
+        ascension=[7, 8, 9, 10], suffix=CHARACTER, character=CHARACTER
     )
     print(f"Loading data for build_ids: {trainer.build_id}")
     data = trainer.load_data()
@@ -280,23 +279,8 @@ def main():
         y_reg_test,
     ) = data
 
-    clf_params = {
-        "max_depth": 5,
-        "n_estimators": 1000,
-        "learning_rate": 0.03,
-        "tree_method": "hist",
-    }
-
-    reg_params = {
-        "objective": "reg:tweedie",
-        "max_depth": 5,  # DECREASED: Trees don't need to be as deep anymore
-        "n_estimators": 1500,  # Kept high (Relies on early stopping)
-        "learning_rate": 0.03,  # Kept low
-        "tree_method": "hist",
-        "min_child_weight": 3,  # DECREASED: Adjusted for the smaller dataset
-        # "colsample_bytree": 0.8,  # INCREASED: Less need to hide features
-        # "subsample": 0.8,  # NEW: Prevents overfitting the smaller dataset
-    }
+    clf_params = CHARACTER_CONFIGS[CHARACTER]["clf_params"]
+    reg_params = CHARACTER_CONFIGS[CHARACTER]["reg_params"]
 
     # Train
     trainer.train(

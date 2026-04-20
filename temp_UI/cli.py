@@ -174,7 +174,8 @@ def take_upgrade_choices(state):
 
 def debug(state):
     if state.reader:
-        from stat_analysis.preprocess import CURSE_CARDS, EXPERIMENT_PANEL
+        from config import EXPERIMENT_PANEL
+        from stat_analysis.preprocess import CURSE_CARDS
 
         snapshot = PlayerSnapshot(state.reader)
         snapshot.run()

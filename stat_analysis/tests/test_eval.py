@@ -6,7 +6,7 @@ import joblib
 from run_preprocessor.save_reader import CurrentSaveReader
 from run_preprocessor.snapshot import PlayerSnapshot
 from stat_analysis.eval import Evaluator
-from stat_analysis.state_vectorizer import TestCaseGenerator
+from stat_analysis.testcase_generator import TestCaseGenerator
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"

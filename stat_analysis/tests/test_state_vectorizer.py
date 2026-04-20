@@ -6,7 +6,7 @@ from sklearn.feature_extraction import DictVectorizer
 
 from run_preprocessor.deck import Deck
 from stat_analysis.preprocess import GLOBAL_VECTORIZER, build_master_schema
-from stat_analysis.state_vectorizer import TestCaseGenerator
+from stat_analysis.testcase_generator import TestCaseGenerator
 
 EXPERIMENT_PANEL = {
     "group_all_curses": False,  # Flattens Injury, Ascender's Bane, etc., into "TOTAL_CURSES"

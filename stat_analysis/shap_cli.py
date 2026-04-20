@@ -21,7 +21,7 @@ from item_scrapper.items import (
     RELICS,
 )
 from stat_analysis.preprocess import GLOBAL_VECTORIZER, LoadRuns
-from stat_analysis.train_hurdle import HurdleModel
+from stat_analysis.train import HurdleModel
 
 # Set up logging
 logging.basicConfig(

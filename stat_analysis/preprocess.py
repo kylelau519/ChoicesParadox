@@ -6,9 +6,7 @@
 # Convert each encounter in a run file to a trainable point
 
 import logging
-from typing import Any, Protocol
 
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
 from sklearn.feature_extraction import DictVectorizer
@@ -16,13 +14,10 @@ from sklearn.model_selection import train_test_split
 
 from config import EXPERIMENT_PANEL
 from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, CURSE_CARDS, POTIONS, RELICS
-from run_preprocessor.deck import Deck
 from run_preprocessor.run_reader import RawData
 from run_preprocessor.snapshot import PlayerSnapshot
 
 logger = logging.getLogger(__name__)
-
-
 
 
 def build_master_schema(experiment_config):

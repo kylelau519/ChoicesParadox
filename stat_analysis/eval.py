@@ -6,14 +6,14 @@ from typing import Any, Protocol
 import joblib
 import numpy as np
 
-import stat_analysis.train_hurdle
+import stat_analysis.train
 from item_scrapper.items import *
 from run_preprocessor.save_reader import CurrentSaveReader
 from run_preprocessor.snapshot import PlayerSnapshot
 from stat_analysis.preprocess import GLOBAL_VECTORIZER
-from stat_analysis.state_vectorizer import TestCaseGenerator
+from stat_analysis.testcase_generator import TestCaseGenerator
 
-sys.modules["__main__"].HurdleModel = stat_analysis.train_hurdle.HurdleModel
+sys.modules["__main__"].HurdleModel = stat_analysis.train.HurdleModel
 logger = logging.getLogger(__name__)
 
 

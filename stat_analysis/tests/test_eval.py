@@ -14,30 +14,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 EXPERIMENT_PANEL = {
-    "group_all_curses": False,  # Flattens Injury, Ascender's Bane, etc., into "TOTAL_CURSES"
-    "correlate_upgrades": False,  # Treats "Strike+1" and "Strike" as the same feature
-    "count_potions_as_binary": False,  # 0 if empty, 1 if holding any potion
-    "ignore_starter_relic": False,  # Removes Burning Blood/Ring of Snake from features
+    "group_all_curses": True,
+    "correlate_upgrades": True,
+    "count_potions_as_binary": False,
+    "ignore_starter_relic": False,
+    "ignore_health": True,
+    "total_upgrades": True,
+    "total_deck_size": True,
+    "starter_ratio": False,
 }
 
 
 class TestEval(unittest.TestCase):
-    def test_showing_features(self):
-        model = joblib.load("models/hurdle_model_ignore_health.joblib")
-        eval = Evaluator(model)
-        features = eval.important_features(
-            top_n=15,
-            character="*",
-            show_relics=True,
-            show_potions=False,
-            show_colorless_cards=False,
-            show_event_cards=False,
-            show_encounters=False,
-        )
-
     def test_card_choices_changes(self):
         save_path = "testfiles/current_run_test_health.save"
-        model_path = "models/hurdle_model_testfile.joblib"
+        model_path = "models/hurdle_model_silent.joblib"
 
         eval = Evaluator.from_file(model_path)
 

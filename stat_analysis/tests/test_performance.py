@@ -12,6 +12,16 @@ logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+EXPERIMENT_PANEL = {
+    "group_all_curses": True,
+    "correlate_upgrades": True,
+    "count_potions_as_binary": False,
+    "ignore_starter_relic": False,
+    "ignore_health": True,
+    "total_upgrades": True,
+    "total_deck_size": True,
+    "starter_ratio": False,
+}
 
 
 class TestHealthEvaluation(unittest.TestCase):
@@ -20,7 +30,7 @@ class TestHealthEvaluation(unittest.TestCase):
         if not os.path.exists(save_path):
             self.skipTest(f"Save file {save_path} not found")
 
-        model_path = "models/hurdle_model_testfile.joblib"
+        model_path = "testfiles/hurdle_model_testfile.joblib"
         if not os.path.exists(model_path):
             self.skipTest(f"Model file {model_path} not found")
 
@@ -68,7 +78,7 @@ class TestHealthEvaluation(unittest.TestCase):
         if not os.path.exists(save_path):
             self.skipTest(f"Save file {save_path} not found")
 
-        model_path = "models/hurdle_model_testfile.joblib"
+        model_path = "testfiles/hurdle_model_testfile.joblib"
         if not os.path.exists(model_path):
             self.skipTest(f"Model file {model_path} not found")
 
@@ -127,7 +137,7 @@ class TestHealthEvaluation(unittest.TestCase):
         if not os.path.exists(save_path):
             self.skipTest(f"Save file {save_path} not found")
 
-        model_path = "models/hurdle_model_testfile.joblib"
+        model_path = "testfiles/hurdle_model_testfile.joblib"
         if not os.path.exists(model_path):
             self.skipTest(f"Model file {model_path} not found")
 

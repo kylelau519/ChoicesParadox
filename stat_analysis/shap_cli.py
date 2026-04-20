@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 import shap
 
+from config import CHARACTER, model_path
+
 # Add the project root to sys.path to allow imports from stat_analysis
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -21,7 +23,7 @@ from item_scrapper.items import (
     RELICS,
 )
 from stat_analysis.preprocess import GLOBAL_VECTORIZER, LoadRuns
-from stat_analysis.train_hurdle import HurdleModel
+from stat_analysis.train import HurdleModel
 
 # Set up logging
 logging.basicConfig(
@@ -58,11 +60,10 @@ class SHAPCompleter:
 
 
 class SHAPExplorer:
-    def __init__(self, character="silent", model_path=None):
+    def __init__(self, character=CHARACTER, model_path=None):
         self.character = character
         if model_path is None:
             model_path = f"models/hurdle_model_{character}.joblib"
-
         self.model_path = model_path
         self.model = None
         self.x_df = None
@@ -228,8 +229,8 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--char", type=str, default="silent")
-    parser.add_argument("--model", type=str, default=None)
+    parser.add_argument("--char", type=str, default=CHARACTER)
+    parser.add_argument("--model", type=str, default=model_path)
     args = parser.parse_args()
 
     explorer = SHAPExplorer(character=args.char, model_path=args.model)

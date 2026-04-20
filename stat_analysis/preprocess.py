@@ -6,40 +6,18 @@
 # Convert each encounter in a run file to a trainable point
 
 import logging
-from typing import Any, Protocol
 
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.model_selection import train_test_split
 
+from config import EXPERIMENT_PANEL
 from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, CURSE_CARDS, POTIONS, RELICS
-from run_preprocessor.deck import Deck
 from run_preprocessor.run_reader import RawData
 from run_preprocessor.snapshot import PlayerSnapshot
 
 logger = logging.getLogger(__name__)
-
-
-EXPERIMENT_PANEL = {
-    "group_all_curses": True,  # Flattens Injury, Ascender's Bane, etc., into "TOTAL_CURSES"
-    "correlate_upgrades": True,  # Treats "Strike+1" and "Strike" as the same feature
-    "count_potions_as_binary": False,  # 0 if empty, 1 if holding any potion
-    "ignore_starter_relic": False,  # Removes Burning Blood/Ring of Snake from features
-    "ignore_health": True,  # Remove current_health and max_health
-    "total_upgrades": False,  # Show total upgrades feature
-    "total_deck_size": False,  # Show total deck size feature
-    "starter_ratio": False,  # Show the strike+defend / total cards ratio for each character
-}
-
-
-class MasterSchema(Protocol):
-    current_hp: int
-    max_hp: int
-    deck: Deck
-    potions: dict[str, int]
-    relics: dict[str, int]
 
 
 def build_master_schema(experiment_config):
@@ -157,9 +135,8 @@ class RunToInputConverter:
             raw_cards["STARTER_RATIO"] = (
                 total_starter / total_cards if total_cards > 0 else 0.0
             )
-
         input.update(raw_cards)
-
+        ### Potions and relics
         raw_potions = self.snapshot_now.potions.copy()
         if EXPERIMENT_PANEL["count_potions_as_binary"]:
             for potion_id, count in raw_potions.items():
@@ -229,14 +206,13 @@ class RunToInputConverter:
         while self.snapshot_now.current_lumpsum_floor < num_total_floors:
             if self.snapshot_next.is_encounter():
                 input, target = self.convert_snapshot()
-                if input is None and target is None:
+                if input is None or target is None:
                     logger.debug(
                         f"Skipping floor {self.snapshot_next.current_lumpsum_floor} as it's not an encounter."
                     )
-                    self.walk()
-                    continue
-                inputs.append(input)
-                targets.append(target)
+                else:
+                    inputs.append(input)
+                    targets.append(target)
             self.walk()
         return inputs, targets
 
@@ -368,17 +344,3 @@ class LoadRuns:
             y_reg_train,
             y_reg_test,
         )
-
-    def show_damage_taken_hist(self):
-
-        _, _, y_total, _ = self.get_train_test_set(test_size=0.1)
-        if y_total is None:
-            logger.error("No data to plot.")
-            return
-
-        plt.hist(y_total, bins=range(int(y_total.max()) + 1), alpha=0.75)
-        plt.title("Damage Taken Distribution")
-        plt.xlabel("Damage Taken")
-        plt.ylabel("Frequency")
-        plt.grid(axis="y", alpha=0.75)
-        plt.savefig(f"reports/damage_taken_histogram_{self.suffix}.png")

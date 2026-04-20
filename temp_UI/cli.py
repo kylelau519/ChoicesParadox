@@ -1,9 +1,7 @@
 import logging
 import readline
-import time
 
-from item_scrapper.items import ALL_CARDS, RELICS, validate_relic_id
-from run_preprocessor.deck import validate_card_id
+from item_scrapper.items import ALL_CARDS, RELICS, validate_card_id, validate_relic_id
 from run_preprocessor.snapshot import PlayerSnapshot
 
 logger = logging.getLogger(__name__)
@@ -40,21 +38,10 @@ def evaluate_and_print_results(eval_obj, state_reader, test_func, items, title):
         return
 
     # Check if results are dicts (mean, low, high)
-    first_val = next(iter(results.values()))
-    is_dict = isinstance(first_val, dict)
-
-    if is_dict:
-        sorted_results = sorted(results.items(), key=lambda x: x[1]["mean"])
-    else:
-        sorted_results = sorted(results.items(), key=lambda x: x[1])
+    sorted_results = sorted(results.items(), key=lambda x: x[1]["mean"])
 
     print(f"\nWeighted damage score for remaining combats ({title}):")
-
-    # Header
-    if is_dict:
-        header = f"{'Rank':<5} | {'Option':<35} | {'Mean':<8} | {'80% CL Range':<20}"
-    else:
-        header = f"{'Rank':<5} | {'Option':<35} | {'Score':<8}"
+    header = f"{'Rank':<5} | {'Option':<35} | {'Mean':<8} | {'80% CL Range':<20}"
 
     print(header)
     print("-" * len(header))
@@ -65,13 +52,8 @@ def evaluate_and_print_results(eval_obj, state_reader, test_func, items, title):
         if display_label == "Original":
             display_label = "Skip / No Change"
 
-        if is_dict:
-            cl_range = f"[{val['low']:>6.2f}, {val['high']:>6.2f}]"
-            print(
-                f"{i:<5} | {display_label:<35} | {val['mean']:>8.2f} | {cl_range:<20}"
-            )
-        else:
-            print(f"{i:<5} | {display_label:<35} | {val:>8.2f}")
+        cl_range = f"[{val['low']:>6.2f}, {val['high']:>6.2f}]"
+        print(f"{i:<5} | {display_label:<35} | {val['mean']:>8.2f} | {cl_range:<20}")
 
     suggested = sorted_results[0][0]
     if suggested == "Original":
@@ -188,6 +170,73 @@ def take_upgrade_choices(state):
     evaluate_and_print_results(
         state.evaluator, state.reader, test_func, valid_upgrades, "Upgrade"
     )
+
+
+def debug(state):
+    if state.reader:
+        from config import EXPERIMENT_PANEL
+        from stat_analysis.preprocess import CURSE_CARDS
+
+        snapshot = PlayerSnapshot(state.reader)
+        snapshot.run()
+        print("\n--- DEBUG: Current Deck ---")
+
+        display_cards = snapshot.deck.cards.copy()
+        total_curses = 0
+        total_upgrades = 0
+
+        if EXPERIMENT_PANEL["group_all_curses"]:
+            for card_id in list(display_cards.keys()):
+                if card_id in CURSE_CARDS:
+                    total_curses += display_cards.pop(card_id)
+
+        if EXPERIMENT_PANEL["correlate_upgrades"]:
+            for card_id in list(display_cards.keys()):
+                if card_id.endswith("+"):
+                    count = display_cards.get(card_id, 0)
+                    total_upgrades += count
+                    base_id = card_id.removesuffix("+")
+                    display_cards[base_id] = display_cards.get(base_id, 0) + count
+
+        active_cards = sorted([(k, v) for k, v in display_cards.items() if v > 0])
+        for card_id, count in active_cards:
+            print(f"  {card_id:.<35} {count}")
+
+        print("-" * 40)
+        if EXPERIMENT_PANEL["group_all_curses"]:
+            print(f"  {'TOTAL_CURSES':.<35} {total_curses}")
+        if EXPERIMENT_PANEL["correlate_upgrades"]:
+            print(f"  {'TOTAL_UPGRADES':.<35} {total_upgrades}")
+
+        if EXPERIMENT_PANEL["starter_ratio"]:
+            starter_ids = {
+                "CARD.STRIKE_IRONCLAD",
+                "CARD.DEFEND_IRONCLAD",
+                "CARD.STRIKE_SILENT",
+                "CARD.DEFEND_SILENT",
+                "CARD.STRIKE_DEFECT",
+                "CARD.DEFEND_DEFECT",
+                "CARD.STRIKE_REGENT",
+                "CARD.DEFEND_REGENT",
+                "CARD.STRIKE_NECROBINDER",
+                "CARD.DEFEND_NECROBINDER",
+            }
+            total_starter = 0
+            for card_id, count in snapshot.deck.cards.items():
+                base_id = card_id.rstrip("+")
+                if base_id in starter_ids:
+                    total_starter += count
+            total_cards = sum(snapshot.deck.cards.values())
+            ratio = total_starter / total_cards if total_cards > 0 else 0.0
+            print(f"  {'STARTER_RATIO':.<35} {ratio:.4f}")
+
+        print(
+            f"\nTotal Unique: {len(active_cards)} | Total Cards: {sum(v for _, v in snapshot.deck.cards.items())}"
+        )
+
+        print("---------------------------\n")
+    else:
+        print("No save file loaded yet.")
 
 
 def show_help():

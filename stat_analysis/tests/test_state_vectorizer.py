@@ -6,13 +6,17 @@ from sklearn.feature_extraction import DictVectorizer
 
 from run_preprocessor.deck import Deck
 from stat_analysis.preprocess import GLOBAL_VECTORIZER, build_master_schema
-from stat_analysis.state_vectorizer import TestCaseGenerator
+from stat_analysis.testcase_generator import TestCaseGenerator
 
 EXPERIMENT_PANEL = {
-    "group_all_curses": False,  # Flattens Injury, Ascender's Bane, etc., into "TOTAL_CURSES"
-    "correlate_upgrades": False,  # Treats "Strike+1" and "Strike" as the same feature
-    "count_potions_as_binary": False,  # 0 if empty, 1 if holding any potion
-    "ignore_starter_relic": False,  # Removes Burning Blood/Ring of Snake from features
+    "group_all_curses": True,
+    "correlate_upgrades": True,
+    "count_potions_as_binary": False,
+    "ignore_starter_relic": False,
+    "ignore_health": True,
+    "total_upgrades": True,
+    "total_deck_size": True,
+    "starter_ratio": False,
 }
 
 

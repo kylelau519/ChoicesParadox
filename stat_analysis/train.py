@@ -7,14 +7,31 @@ import seaborn as sns
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from xgboost import XGBRegressor
 
+from item_scrapper.items import SUPPORTED_BUILD_IDS
 from stat_analysis.preprocess import GLOBAL_VECTORIZER, LoadRuns
 
 logger = logging.getLogger(__name__)
 
 
 class Trainer:
-    def __init__(self, build_id="v0.102.0", character="*", ascension=None, suffix=""):
-        self.build_id = build_id
+    def __init__(self, build_id=None, character="*", ascension=None, suffix=""):
+        if build_id is None:
+            # Find all versions in data/runs
+            runs_dir = "data/runs"
+            if os.path.exists(runs_dir):
+                self.build_id = sorted(
+                    [
+                        d
+                        for d in os.listdir(runs_dir)
+                        if os.path.isdir(os.path.join(runs_dir, d))
+                        and d.startswith("v")
+                        and any(v in d for v in SUPPORTED_BUILD_IDS)
+                    ]
+                )
+            else:
+                self.build_id = "v0.102.0"
+        else:
+            self.build_id = build_id
         self.character = character
         self.ascension = ascension or [7, 8, 9, 10]
         self.model = None
@@ -92,6 +109,7 @@ class Trainer:
 
 def main():
     trainer = Trainer(ascension=[3, 4, 5, 6, 7, 8, 9, 10])
+    print(f"Loading data for build_ids: {trainer.build_id}")
     x_train, x_test, y_train, y_test = trainer.load_data()
 
     for i in range(5):

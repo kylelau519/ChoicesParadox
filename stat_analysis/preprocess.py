@@ -28,6 +28,9 @@ EXPERIMENT_PANEL = {
     "count_potions_as_binary": False,  # 0 if empty, 1 if holding any potion
     "ignore_starter_relic": False,  # Removes Burning Blood/Ring of Snake from features
     "ignore_health": True,  # Remove current_health and max_health
+    "total_upgrades": False,  # Show total upgrades feature
+    "total_deck_size": False,  # Show total deck size feature
+    "starter_ratio": False,  # Show the strike+defend / total cards ratio for each character
 }
 
 
@@ -54,8 +57,14 @@ def build_master_schema(experiment_config):
     if experiment_config["group_all_curses"]:
         schema["TOTAL_CURSES"] = 0
 
-    if experiment_config["correlate_upgrades"]:
+    if experiment_config["total_upgrades"]:
         schema["TOTAL_UPGRADES"] = 0
+
+    if experiment_config["total_deck_size"]:
+        schema["TOTAL_DECK_SIZE"] = 0
+
+    if experiment_config["starter_ratio"]:
+        schema["STARTER_RATIO"] = 0.0
 
     # 2. Add Potions
     for potion_id in POTIONS:
@@ -102,6 +111,9 @@ class RunToInputConverter:
         # --- FEATURE ENGINEERING based on EXPERIMENT_PANEL ---
         raw_cards = self.snapshot_now.deck.cards.copy()
 
+        if EXPERIMENT_PANEL["total_deck_size"]:
+            raw_cards["TOTAL_DECK_SIZE"] = sum(raw_cards.values())
+
         if EXPERIMENT_PANEL["group_all_curses"]:
             total_curses = 0
             for card_id in list(raw_cards.keys()):
@@ -109,8 +121,8 @@ class RunToInputConverter:
                     total_curses += raw_cards.pop(card_id)
             raw_cards["TOTAL_CURSES"] = total_curses
 
+        total_upgrades = 0
         if EXPERIMENT_PANEL["correlate_upgrades"]:
-            total_upgrades = 0
             for card_id in list(raw_cards.keys()):
                 if card_id.endswith("+"):
                     total_upgrades += raw_cards.get(card_id, 0)
@@ -118,7 +130,33 @@ class RunToInputConverter:
                     raw_cards[base_id] = raw_cards.get(base_id, 0) + raw_cards.get(
                         card_id, 0
                     )
+        if EXPERIMENT_PANEL["total_upgrades"]:
             raw_cards["TOTAL_UPGRADES"] = total_upgrades
+
+        if EXPERIMENT_PANEL["starter_ratio"]:
+            starter_ids = {
+                "CARD.STRIKE_IRONCLAD",
+                "CARD.DEFEND_IRONCLAD",
+                "CARD.STRIKE_SILENT",
+                "CARD.DEFEND_SILENT",
+                "CARD.STRIKE_DEFECT",
+                "CARD.DEFEND_DEFECT",
+                "CARD.STRIKE_REGENT",
+                "CARD.DEFEND_REGENT",
+                "CARD.STRIKE_NECROBINDER",
+                "CARD.DEFEND_NECROBINDER",
+            }
+            total_starter = 0
+            # snapshot_now.deck.cards is the original deck before correlate_upgrades transformation
+            for card_id, count in self.snapshot_now.deck.cards.items():
+                base_id = card_id.rstrip("+")
+                if base_id in starter_ids:
+                    total_starter += count
+
+            total_cards = sum(self.snapshot_now.deck.cards.values())
+            raw_cards["STARTER_RATIO"] = (
+                total_starter / total_cards if total_cards > 0 else 0.0
+            )
 
         input.update(raw_cards)
 
@@ -216,13 +254,16 @@ class LoadRuns:
         self,
         character: str,
         ascension: list[int],
-        build_id: str,
+        build_id: str | list[str],
         data_dir: str = "../data/runs/",
         suffix: str = "",
     ):
         self.character = character
         self.ascension = ascension
-        self.build_id = build_id
+        if isinstance(build_id, str):
+            self.build_ids = [build_id]
+        else:
+            self.build_ids = build_id
         self.data_dir = data_dir
         self.runs_path = []
         self.suffix = suffix
@@ -231,15 +272,16 @@ class LoadRuns:
         import glob
         import os
 
-        for a in self.ascension:
-            data_dir = f"{self.data_dir}/{self.build_id}/{self.character}/a{a}/"
-            abs_data_dir = os.path.abspath(
-                os.path.join(os.path.dirname(__file__), data_dir)
-            )
-            paths = glob.glob(f"{abs_data_dir}/**/*.run", recursive=True)
-            if not paths:
-                logger.warning(f"No run files found in {abs_data_dir}")
-            self.runs_path.extend(paths)
+        for b_id in self.build_ids:
+            for a in self.ascension:
+                data_dir = f"{self.data_dir}/{b_id}/{self.character}/a{a}/"
+                abs_data_dir = os.path.abspath(
+                    os.path.join(os.path.dirname(__file__), data_dir)
+                )
+                paths = glob.glob(f"{abs_data_dir}/**/*.run", recursive=True)
+                if not paths:
+                    logger.warning(f"No run files found in {abs_data_dir}")
+                self.runs_path.extend(paths)
         return self.runs_path
 
     def get_train_test_set(self, test_size: float = 0.2, random_state: int = 42):

@@ -76,7 +76,8 @@ def main():
     logger.info(f"🚀 Starting listener on {SAVE_PATH}")
 
     # Change model path here to choose which model to use.
-    model_path = os.getenv("MODEL_PATH", "models/hurdle_model_testfile.joblib")
+    model_path = os.getenv("MODEL_PATH", "models/hurdle_model_multi_version.joblib")
+    # model_path = os.getenv("MODEL_PATH", "models/hurdle_model_testfile.joblib")
 
     logger.info(f"Using model: {model_path}")
     evaluator = Evaluator.from_file(model_path)
@@ -116,17 +117,73 @@ def main():
                 cli.take_upgrade_choices(state)
             elif cmd == "_deck":
                 if state.reader:
+                    from stat_analysis.preprocess import CURSE_CARDS, EXPERIMENT_PANEL
+
                     snapshot = PlayerSnapshot(state.reader)
                     snapshot.run()
                     print("\n--- DEBUG: Current Deck ---")
+
+                    # Manual feature engineering for display
+                    display_cards = snapshot.deck.cards.copy()
+                    total_curses = 0
+                    total_upgrades = 0
+
+                    if EXPERIMENT_PANEL["group_all_curses"]:
+                        for card_id in list(display_cards.keys()):
+                            if card_id in CURSE_CARDS:
+                                total_curses += display_cards.pop(card_id)
+
+                    if EXPERIMENT_PANEL["correlate_upgrades"]:
+                        for card_id in list(display_cards.keys()):
+                            if card_id.endswith("+"):
+                                count = display_cards.get(card_id, 0)
+                                total_upgrades += count
+                                base_id = card_id.removesuffix("+")
+                                display_cards[base_id] = (
+                                    display_cards.get(base_id, 0) + count
+                                )
+                                # Note: we don't necessarily want to remove the upgraded one from display
+                                # if we want to see the original deck, but the user asked for features.
+                                # Let's show the "engineered" features.
+
                     active_cards = sorted(
-                        [(k, v) for k, v in snapshot.deck.cards.items() if v > 0]
+                        [(k, v) for k, v in display_cards.items() if v > 0]
                     )
                     for card_id, count in active_cards:
                         print(f"  {card_id:.<35} {count}")
+
+                    print("-" * 40)
+                    if EXPERIMENT_PANEL["group_all_curses"]:
+                        print(f"  {'TOTAL_CURSES':.<35} {total_curses}")
+                    if EXPERIMENT_PANEL["correlate_upgrades"]:
+                        print(f"  {'TOTAL_UPGRADES':.<35} {total_upgrades}")
+
+                    if EXPERIMENT_PANEL["starter_ratio"]:
+                        starter_ids = {
+                            "CARD.STRIKE_IRONCLAD",
+                            "CARD.DEFEND_IRONCLAD",
+                            "CARD.STRIKE_SILENT",
+                            "CARD.DEFEND_SILENT",
+                            "CARD.STRIKE_DEFECT",
+                            "CARD.DEFEND_DEFECT",
+                            "CARD.STRIKE_REGENT",
+                            "CARD.DEFEND_REGENT",
+                            "CARD.STRIKE_NECROBINDER",
+                            "CARD.DEFEND_NECROBINDER",
+                        }
+                        total_starter = 0
+                        for card_id, count in snapshot.deck.cards.items():
+                            base_id = card_id.rstrip("+")
+                            if base_id in starter_ids:
+                                total_starter += count
+                        total_cards = sum(snapshot.deck.cards.values())
+                        ratio = total_starter / total_cards if total_cards > 0 else 0.0
+                        print(f"  {'STARTER_RATIO':.<35} {ratio:.4f}")
+
                     print(
-                        f"Total Unique: {len(active_cards)} | Total Cards: {sum(v for _, v in active_cards)}"
+                        f"\nTotal Unique: {len(active_cards)} | Total Cards: {sum(v for _, v in snapshot.deck.cards.items())}"
                     )
+
                     print("---------------------------\n")
                 else:
                     print("No save file loaded yet.")

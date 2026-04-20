@@ -85,20 +85,60 @@ class TestCaseGenerator:
     def vectorize(self, vectorizer=GLOBAL_VECTORIZER):
         if self.encounter is None:
             raise ValueError("Encounter must be set before vectorizing.")
+
+        # Snapshot state might have been modified by test methods, so we work on a copy of cards
+        temp_cards = self.deck.cards.copy()
+
+        if EXPERIMENT_PANEL["total_deck_size"]:
+            temp_cards["TOTAL_DECK_SIZE"] = sum(temp_cards.values())
+
+        if EXPERIMENT_PANEL["group_all_curses"]:
+            from stat_analysis.preprocess import CURSE_CARDS
+
+            total_curses = 0
+            for card_id in list(temp_cards.keys()):
+                if card_id in CURSE_CARDS:
+                    total_curses += temp_cards.pop(card_id)
+            temp_cards["TOTAL_CURSES"] = total_curses
+
         if EXPERIMENT_PANEL["correlate_upgrades"]:
             total_upgrades = 0
-            for card_id in list(self.deck.cards.keys()):
+            for card_id in list(temp_cards.keys()):
                 if card_id.endswith("+"):
-                    total_upgrades += self.deck.cards[card_id]
+                    count = temp_cards.get(card_id, 0)
+                    total_upgrades += count
                     base_id = card_id.removesuffix("+")
-                    self.deck.cards[base_id] = (
-                        self.deck.cards.get(base_id, 0) + self.deck.cards[card_id]
-                    )
-            self.deck.cards["TOTAL_UPGRADES"] = total_upgrades
+                    temp_cards[base_id] = temp_cards.get(base_id, 0) + count
+            temp_cards["TOTAL_UPGRADES"] = total_upgrades
+
+        if EXPERIMENT_PANEL["starter_ratio"]:
+            starter_ids = {
+                "CARD.STRIKE_IRONCLAD",
+                "CARD.DEFEND_IRONCLAD",
+                "CARD.STRIKE_SILENT",
+                "CARD.DEFEND_SILENT",
+                "CARD.STRIKE_DEFECT",
+                "CARD.DEFEND_DEFECT",
+                "CARD.STRIKE_REGENT",
+                "CARD.DEFEND_REGENT",
+                "CARD.STRIKE_NECROBINDER",
+                "CARD.DEFEND_NECROBINDER",
+            }
+            total_starter = 0
+            # Use self.deck.cards to avoid using transformed temp_cards for ratio calculation
+            for card_id, count in self.deck.cards.items():
+                base_id = card_id.rstrip("+")
+                if base_id in starter_ids:
+                    total_starter += count
+            total_cards = sum(self.deck.cards.values())
+            temp_cards["STARTER_RATIO"] = (
+                total_starter / total_cards if total_cards > 0 else 0.0
+            )
+
         input_dict = {
             "current_hp": self.current_hp,
             "max_hp": self.max_hp,
-            **self.deck.cards,
+            **temp_cards,
             **self.potions,
             **self.relics,
             **self.encounter,

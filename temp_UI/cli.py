@@ -5,7 +5,6 @@ import time
 from item_scrapper.items import ALL_CARDS, RELICS, validate_relic_id
 from run_preprocessor.deck import validate_card_id
 from run_preprocessor.snapshot import PlayerSnapshot
-from stat_analysis.state_vectorizer import TestCaseGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -49,30 +48,35 @@ def evaluate_and_print_results(eval_obj, state_reader, test_func, items, title):
     else:
         sorted_results = sorted(results.items(), key=lambda x: x[1])
 
-    logger.info(f"\nWeighted damage score for remaining combats ({title}):")
-    for label, val in sorted_results[:3]:  # Top 3
+    print(f"\nWeighted damage score for remaining combats ({title}):")
+
+    # Header
+    if is_dict:
+        header = f"{'Rank':<5} | {'Option':<35} | {'Mean':<8} | {'80% CL Range':<20}"
+    else:
+        header = f"{'Rank':<5} | {'Option':<35} | {'Score':<8}"
+
+    print(header)
+    print("-" * len(header))
+
+    for i, (label, val) in enumerate(sorted_results, 1):
+        # Format label for better display
+        display_label = label
+        if display_label == "Original":
+            display_label = "Skip / No Change"
+
         if is_dict:
-            logger.info(
-                f"  {label}: {val['mean']:.2f}, 80%CL [{val['low']:.2f}, {val['high']:.2f}]"
+            cl_range = f"[{val['low']:>6.2f}, {val['high']:>6.2f}]"
+            print(
+                f"{i:<5} | {display_label:<35} | {val['mean']:>8.2f} | {cl_range:<20}"
             )
         else:
-            logger.info(f"  {label}: {val:.2f}")
-
-    if len(sorted_results) > 3:
-        if len(sorted_results) > 4:
-            logger.info("  ...")
-        for label, val in sorted_results[-1:]:  # Worst 1
-            if is_dict:
-                logger.info(
-                    f"  {label}: {val['mean']:.2f}, 80%CL [{val['low']:.2f}, {val['high']:.2f}]"
-                )
-            else:
-                logger.info(f"  {label}: {val:.2f}")
+            print(f"{i:<5} | {display_label:<35} | {val:>8.2f}")
 
     suggested = sorted_results[0][0]
     if suggested == "Original":
         suggested = "Skip"
-    logger.info(f"\nSuggested {title.lower()} choice: {suggested}")
+    print(f"\nSuggested {title.lower()} choice: {suggested}")
     print("-----------------------------\n")
 
 

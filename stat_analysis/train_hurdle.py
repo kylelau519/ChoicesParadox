@@ -15,6 +15,7 @@ from sklearn.metrics import (
 )
 from xgboost import XGBClassifier, XGBRegressor
 
+from item_scrapper.items import SUPPORTED_BUILD_IDS
 from stat_analysis.preprocess import LoadRuns
 
 logger = logging.getLogger(__name__)
@@ -49,13 +50,29 @@ class HurdleModel:
 class HurdleTrainer:
     def __init__(
         self,
-        build_id="v0.102.0",
+        build_id=None,
         character="*",
         ascension=None,
         suffix="",
         model_path=None,
     ):
-        self.build_id = build_id
+        if build_id is None:
+            # Find all versions in data/runs
+            runs_dir = "data/runs"
+            if os.path.exists(runs_dir):
+                self.build_id = sorted(
+                    [
+                        d
+                        for d in os.listdir(runs_dir)
+                        if os.path.isdir(os.path.join(runs_dir, d))
+                        and d.startswith("v")
+                        and any(v in d for v in SUPPORTED_BUILD_IDS)
+                    ]
+                )
+            else:
+                self.build_id = "v0.102.0"
+        else:
+            self.build_id = build_id
         self.character = character
         self.ascension = ascension or [7, 8, 9, 10]
         self.model = None
@@ -240,7 +257,8 @@ class HurdleTrainer:
 
 
 def main():
-    trainer = HurdleTrainer(ascension=[6, 7, 8, 9, 10], suffix="testfile")
+    trainer = HurdleTrainer(ascension=[6, 7, 8, 9, 10], suffix="multi_version")
+    print(f"Loading data for build_ids: {trainer.build_id}")
     data = trainer.load_data()
     if data[0] is None:
         print("Error: No data found.")
@@ -268,10 +286,13 @@ def main():
 
     reg_params = {
         "objective": "reg:tweedie",
-        "max_depth": 6,
-        "n_estimators": 1500,
-        "learning_rate": 0.03,
+        "max_depth": 7,  # INCREASED: Gives the tree more "boxes"
+        "n_estimators": 1500,  # Kept high
+        "learning_rate": 0.03,  # Kept low
         "tree_method": "hist",
+        "min_child_weight": 2,  # Prevents aggressive pruning of rare upgrades
+        "colsample_bytree": 0.7,  # Forces the model to look at different cards
+        "subsample": 0.8,  # Adds randomness to prevent overfitting noise
     }
 
     # Train

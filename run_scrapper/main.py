@@ -43,10 +43,10 @@ def save_run(run):
 def main():
     replays = STS2ReplaysScraper()
     replays.scrape(callback=save_run)
-    s = STS2RunsScraper()
-    s.scrape(callback=save_run)
     codex = SpireCodexScraper()
     codex.scrape(callback=save_run)
+    s = STS2RunsScraper()
+    s.scrape(callback=save_run)
 
 
 if __name__ == "__main__":

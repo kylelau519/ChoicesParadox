@@ -101,11 +101,12 @@ class STS2ReplaysScraper(BaseScraper):
                 params={"page": self.pagination["page"]},
             )
             print(
-                f"visiting page {self.pagination['page']} / {self.pagination['total_pages'] - 1}"
+                f"visiting page {self.pagination['page'] + 1} / {self.pagination['total_pages']}"
             )
             soup = BeautifulSoup(r.text, "html.parser")
-            next_link = soup.find("a", text=re.compile("^Next"))
+
             if self.pagination["total_pages"] == 1:
+                next_link = soup.find("a", text=re.compile("^Next"))
                 max_page_link = next_link.find_previous_sibling("a")
                 max_page = max_page_link.text
                 if max_page.isdigit():

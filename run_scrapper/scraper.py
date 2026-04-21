@@ -1,4 +1,3 @@
-from typing import Any
 import requests
 
 
@@ -6,10 +5,10 @@ class BaseScraper:
     def __init__(self, runs_url: str, run_base_url: str, pagination: dict[str, int]):
         self.runs_url: str = runs_url
         self.run_base_url: str = run_base_url
-        self.data: list[Any] = []
+        self.data = []
         self.pagination: dict[str, int] = pagination
 
-    def scrape(self):
+    def scrape(self, callback=None) -> None:
         raise NotImplemented("Not implemented")
 
 class SpireCodexScraper(BaseScraper):
@@ -25,21 +24,20 @@ class SpireCodexScraper(BaseScraper):
             }
         )
 
-    def get_run(self, id: str):
-        url = self.run_base_url + "/" + id
-        print(url)
-        r = requests.get(url)
-        resp = r.json()
-        return resp
-
-    def scrape(self):
+    def scrape(self, callback=None):
         while self.pagination["page"] <= self.pagination["total_pages"]:
             r = requests.get(self.runs_url, params={"page": self.pagination["page"]})
             resp = r.json()
 
             for run in resp["runs"]:
-                run = self.get_run(run["run_hash"])
-                self.data.append(run)
+                id = run["run_hash"]
+                url = self.run_base_url + "/" + id
+                print(f"Scraping from {url}...")
+                r = requests.get(url)
+                if callback is not None:
+                    callback(r.json())
+                else:
+                    self.data.append(r.json())
 
             self.pagination["total"] = resp["total"]
             self.pagination["page"] = resp["page"]
@@ -60,21 +58,20 @@ class STS2RunsScraper(BaseScraper):
             }
         )
 
-    def get_run(self, id):
-        url = self.run_base_url + "/" + str(id)
-        print(url)
-        r = requests.get(url)
-        resp = r.json()
-        return resp["run"]
-
-    def scrape(self):
+    def scrape(self, callback=None):
         while self.pagination["page"] <= self.pagination["totalPages"]:
             r = requests.get(self.runs_url, params={"page": self.pagination["page"]})
             resp = r.json()
 
             for run in resp["runs"]:
-                run = self.get_run(run["id"])
-                self.data.append(run)
+                id = run["id"]
+                url = self.run_base_url + "/" + str(id)
+                print(f"Scraping from {url}...")
+                r = requests.get(url)
+                if callback is not None:
+                    callback(r.json()["run"])
+                else:
+                    self.data.append(r.json()["run"])
 
             self.pagination = resp["pagination"]
             self.pagination["page"] += 1

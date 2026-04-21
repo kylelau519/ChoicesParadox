@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from scraper import SpireCodexScraper, STS2RunsScraper
+from scraper import STS2ReplaysScraper, SpireCodexScraper, STS2RunsScraper
 
 
 def save_data(runs: list[dict[str, Any]]):
@@ -40,10 +40,12 @@ def save_run(run):
             json.dump(run, f, indent=4)
 
 def main():
-    s = STS2RunsScraper()
-    s.scrape(callback=save_run)
-    codex = SpireCodexScraper()
-    codex.scrape(callback=save_run)
+    replays = STS2ReplaysScraper()
+    replays.scrape(callback=save_run)
+    # s = STS2RunsScraper()
+    # s.scrape(callback=save_run)
+    # codex = SpireCodexScraper()
+    # codex.scrape(callback=save_run)
 
     # save_data(s.data)
     # save_data(codex.data)

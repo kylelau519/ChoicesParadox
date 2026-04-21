@@ -9,6 +9,7 @@ def save_data(runs):
     for run in runs:
         save_run(run)
 
+
 def save_run(run):
     players = run.get("players")
     if players is None:
@@ -38,6 +39,7 @@ def save_run(run):
             print(f"Saving {path}...")
             json.dump(run, f, indent=4)
 
+
 def main():
     replays = STS2ReplaysScraper()
     replays.scrape(callback=save_run)
@@ -45,6 +47,7 @@ def main():
     s.scrape(callback=save_run)
     codex = SpireCodexScraper()
     codex.scrape(callback=save_run)
+
 
 if __name__ == "__main__":
     main()

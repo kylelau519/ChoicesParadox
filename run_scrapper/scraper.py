@@ -14,6 +14,7 @@ class BaseScraper:
     def scrape(self, callback=None) -> None:
         raise NotImplemented("Not implemented")
 
+
 class SpireCodexScraper(BaseScraper):
     def __init__(self):
         super().__init__(
@@ -24,7 +25,7 @@ class SpireCodexScraper(BaseScraper):
                 "page": 1,
                 "per_page": 50,
                 "total_pages": 1,
-            }
+            },
         )
 
     def scrape(self, callback=None):
@@ -48,6 +49,7 @@ class SpireCodexScraper(BaseScraper):
             self.pagination["total_pages"] = resp["total_pages"]
             self.pagination["page"] += 1
 
+
 class STS2RunsScraper(BaseScraper):
     def __init__(self):
         super().__init__(
@@ -58,7 +60,7 @@ class STS2RunsScraper(BaseScraper):
                 "limit": 25,
                 "total": 0,
                 "totalPages": 1,
-            }
+            },
         )
 
     def scrape(self, callback=None):
@@ -79,15 +81,16 @@ class STS2RunsScraper(BaseScraper):
             self.pagination = resp["pagination"]
             self.pagination["page"] += 1
 
+
 class STS2ReplaysScraper(BaseScraper):
     def __init__(self):
         super().__init__(
             "https://www.sts2replays.com/runs",
             "https://www.sts2replays.com",
             {
-                "page": 0, # 0 base index
+                "page": 0,  # 0 base index
                 "total_pages": 1,
-            }
+            },
         )
 
     def scrape(self, callback=None):
@@ -95,9 +98,11 @@ class STS2ReplaysScraper(BaseScraper):
             r = requests.get(
                 self.runs_url,
                 impersonate="chrome120",
-                params={"page": self.pagination["page"]}
+                params={"page": self.pagination["page"]},
             )
-            print(f"visiting page {self.pagination['page']} / {self.pagination['total_pages'] - 1}")
+            print(
+                f"visiting page {self.pagination['page']} / {self.pagination['total_pages'] - 1}"
+            )
             soup = BeautifulSoup(r.text, "html.parser")
             next_link = soup.find("a", text=re.compile("^Next"))
             if self.pagination["total_pages"] == 1:
@@ -120,7 +125,9 @@ class STS2ReplaysScraper(BaseScraper):
                 )
 
                 soup = BeautifulSoup(r.text, "html.parser")
-                download_run_link = soup.find("a", text=re.compile("Download .run file$"))
+                download_run_link = soup.find(
+                    "a", text=re.compile("Download .run file$")
+                )
                 download_run_url = download_run_link.get("href")
 
                 r = requests.get(

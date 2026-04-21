@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 import readline
@@ -62,10 +63,23 @@ def callback(file_path: str, eval_obj: Evaluator):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Choices Paradox CLI")
+    parser.add_argument(
+        "--char",
+        type=str,
+        choices=list(config.CHARACTER_CONFIGS.keys()),
+        help="Override character (e.g., ironclad, silent, defect, necrobinder, regent)",
+    )
+    args = parser.parse_args()
+
+    if args.char:
+        config.CHARACTER = args.char
+        logger.info(f"👤 Character overridden to: {config.CHARACTER}")
+
     global SAVE_PATH
     logger.info(f"🚀 Starting listener on {SAVE_PATH}")
 
-    model_path = config.model_path
+    model_path = config.get_model_path()
     logger.info(f"Using model: {model_path}")
     evaluator = Evaluator.from_file(model_path)
 

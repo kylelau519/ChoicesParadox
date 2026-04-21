@@ -1,12 +1,11 @@
 import json
 import os
 from pathlib import Path
-from typing import Any
 
 from scraper import STS2ReplaysScraper, SpireCodexScraper, STS2RunsScraper
 
 
-def save_data(runs: list[dict[str, Any]]):
+def save_data(runs):
     for run in runs:
         save_run(run)
 
@@ -42,16 +41,10 @@ def save_run(run):
 def main():
     replays = STS2ReplaysScraper()
     replays.scrape(callback=save_run)
-    # s = STS2RunsScraper()
-    # s.scrape(callback=save_run)
-    # codex = SpireCodexScraper()
-    # codex.scrape(callback=save_run)
-
-    # save_data(s.data)
-    # save_data(codex.data)
-    # print(f"Succssfully scraped {len(s.data)} runs from sts2runs.")
-    # print(f"Succssfully scraped {len(codex.data)} runs from spire-codex.")
-
+    s = STS2RunsScraper()
+    s.scrape(callback=save_run)
+    codex = SpireCodexScraper()
+    codex.scrape(callback=save_run)
 
 if __name__ == "__main__":
     main()

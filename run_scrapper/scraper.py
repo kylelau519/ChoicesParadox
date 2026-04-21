@@ -83,7 +83,7 @@ class STS2ReplaysScraper(BaseScraper):
     def __init__(self):
         super().__init__(
             "https://www.sts2replays.com/runs",
-            "https://www.sts2replays.com/runs",
+            "https://www.sts2replays.com",
             {
                 "page": 0, # 0 base index
                 "total_pages": 1,
@@ -109,14 +109,27 @@ class STS2ReplaysScraper(BaseScraper):
                     print("The max page is not numeric.")
                     return
 
-            # for run in resp["runs"]:
-            #     id = run["id"]
-            #     url = self.run_base_url + "/" + str(id)
-            #     print(f"Scraping from {url}...")
-            #     r = requests.get(url)
-            #     if callback is not None:
-            #         callback(r.json()["run"])
-            #     else:
-            #         self.data.append(r.json()["run"])
+            run_links = soup.find_all("a", attrs={"aria-label": "View run"})
+            for run_link in run_links:
+                run_url = run_link.get("href")
+                url = self.run_base_url + run_url
+                print(f"Scraping from {url}...")
+                r = requests.get(
+                    url,
+                    impersonate="chrome120",
+                )
+
+                soup = BeautifulSoup(r.text, "html.parser")
+                download_run_link = soup.find("a", text=re.compile("Download .run file$"))
+                download_run_url = download_run_link.get("href")
+
+                r = requests.get(
+                    download_run_url,
+                    impersonate="chrome120",
+                )
+                if callback is not None:
+                    callback(r.json())
+                else:
+                    self.data.append(r.json())
 
             self.pagination["page"] += 1

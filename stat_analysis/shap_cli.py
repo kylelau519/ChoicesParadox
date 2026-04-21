@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import shap
 
-from config import CHARACTER, get_model_path
+from config import CHARACTER, SUPPORTED_BUILD_IDS, get_model_path
 
 # Add the project root to sys.path to allow imports from stat_analysis
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -97,8 +97,13 @@ class SHAPExplorer:
         build_id = "v0.102.0"
         if os.path.exists(runs_dir):
             versions = sorted([d for d in os.listdir(runs_dir) if d.startswith("v")])
-            if versions:
-                build_id = versions[-1]
+            versions = [
+                v
+                for v in versions
+                if any(supported in v for supported in SUPPORTED_BUILD_IDS)
+            ]
+            print(versions)
+            build_id = versions
 
         loader = LoadRuns(
             character=self.character, ascension=[7, 8, 9, 10], build_id=build_id
@@ -151,6 +156,15 @@ class SHAPExplorer:
 
     def plot_beeswarm(self, component="reg"):
         df, sv = self.get_filtered_df_and_shap(component)
+
+        # Add non-zero counts to feature names for better visibility of sparsity
+        total_rows = len(df)
+        new_columns = []
+        for col in df.columns:
+            nz = (df[col] != 0).sum()
+            new_columns.append(f"{col.lower()} ({nz}/{total_rows - nz})")
+        df.columns = new_columns
+
         plt.figure(figsize=(14, 10))
         # shap.plots.beeswarm expects an Explanation object for some versions,
         # but summary_plot is often more robust for older SHAP.
@@ -161,6 +175,15 @@ class SHAPExplorer:
 
     def plot_summary(self, component="reg"):
         df, sv = self.get_filtered_df_and_shap(component)
+
+        # Add non-zero counts to feature names for better visibility of sparsity
+        total_rows = len(df)
+        new_columns = []
+        for col in df.columns:
+            nz = (df[col] != 0).sum()
+            new_columns.append(f"{col} (nz: {nz}, z: {total_rows - nz})")
+        df.columns = new_columns
+
         plt.figure(figsize=(14, 10))
         shap.summary_plot(sv, df, plot_type="bar", show=False)
         plt.title(f"Global Feature Importance - {component.upper()} - {self.character}")

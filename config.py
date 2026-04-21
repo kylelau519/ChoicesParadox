@@ -5,9 +5,8 @@ DATA_ITEMS_DIR = BASE_DIR / "data" / "items"
 SCRAPPER_DIR = BASE_DIR / "item_scrapper"
 
 # Default character for UI/eval
-CHARACTER = "necrobinder"
+CHARACTER = "defect"
 
-# Default Experiment Panel (can be overridden per character)
 EXPERIMENT_PANEL = {
     "group_all_curses": True,
     "correlate_upgrades": True,
@@ -101,5 +100,8 @@ CHARACTER_CONFIGS = {
     },
 }
 
-current_run_path = "~/Library/Application Support/Steam/userdata/########/2868840/remote/profile1/saves/current_run.save"
-model_path = f"~/ChoicesParadox/models/hurdle_model_{CHARACTER}.joblib"
+current_run_path = "/Users/kylelau519/Library/Application Support/Steam/userdata/243023389/2868840/remote/profile1/saves/current_run.save"
+
+
+def get_model_path():
+    return f"{BASE_DIR}/models/hurdle_model_{CHARACTER}.joblib"

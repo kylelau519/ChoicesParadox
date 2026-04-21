@@ -9,11 +9,11 @@ import numpy as np
 import pandas as pd
 import shap
 
-from config import CHARACTER, model_path
+from config import CHARACTER, get_model_path
 
 # Add the project root to sys.path to allow imports from stat_analysis
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
+import config
 from item_scrapper.items import (
     ALL_CARDS,
     ALL_ENCOUNTERS,
@@ -229,11 +229,20 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--char", type=str, default=CHARACTER)
-    parser.add_argument("--model", type=str, default=model_path)
+    parser.add_argument(
+        "--char",
+        type=str,
+        choices=list(config.CHARACTER_CONFIGS.keys()),
+        default=CHARACTER,
+    )
+    parser.add_argument("--model", type=str, default=None)
     args = parser.parse_args()
 
-    explorer = SHAPExplorer(character=args.char, model_path=args.model)
+    if args.char:
+        config.CHARACTER = args.char
+
+    m_path = args.model if args.model else config.get_model_path()
+    explorer = SHAPExplorer(character=config.CHARACTER, model_path=m_path)
     if not explorer.load():
         return
 

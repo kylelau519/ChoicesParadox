@@ -258,6 +258,9 @@ class LoadRuns:
                 if not paths:
                     logger.warning(f"No run files found in {abs_data_dir}")
                 self.runs_path.extend(paths)
+        logger.info(
+            f"Found {len(self.runs_path)} run files for character {self.character} in ascensions {self.ascension} and builds {self.build_ids}"
+        )
         return self.runs_path
 
     def get_train_test_set(self, test_size: float = 0.2, random_state: int = 42):

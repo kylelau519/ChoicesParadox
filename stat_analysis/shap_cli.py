@@ -27,7 +27,7 @@ from stat_analysis.train import HurdleModel
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -73,10 +73,10 @@ class SHAPExplorer:
         self.shap_values_reg = None
 
         self.filters = {
-            "show_relics": True,
-            "show_potions": True,
+            "show_relics": False,
+            "show_potions": False,
             "show_colorless": True,
-            "show_encounters": True,
+            "show_encounters": False,
         }
 
     def load(self):
@@ -108,7 +108,7 @@ class SHAPExplorer:
         loader = LoadRuns(
             character=self.character, ascension=[7, 8, 9, 10], build_id=build_id
         )
-        data = loader.get_hurdle_train_test_set(test_size=0.1)
+        data = loader.get_hurdle_train_test_set(test_size=0.5)
         if data[1] is None:
             logger.error("No data found to evaluate.")
             return False

@@ -34,7 +34,8 @@ class HurdleModel:
 
     def predict(self, X):
         # P(y > 0)
-        p_damage = self.clf.predict_proba(X)[:, 1]
+        # p_damage = self.clf.predict_proba(X)[:, 1]
+        p_damage = self.clf.predict(X)
         # E[y | y > 0] for different cases
         mean_cond = self.reg_mean.predict(X)
         low_cond = self.reg_low.predict(X)
@@ -238,7 +239,7 @@ class HurdleTrainer:
             bins=10,
         )
         plt.axvline(0, color="black", linestyle="--", label="Threshold (p=0.5)")
-        plt.titlef(f"Classifier Separation (Score Range -1 to 1) {self.suffix}")
+        plt.title(f"Classifier Separation (Score Range -1 to 1) {self.suffix}")
         plt.xlabel("Score (-1: Flawless Probable, 1: Damage Probable)")
         plt.ylabel("Frequency")
         plt.legend()

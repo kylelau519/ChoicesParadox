@@ -105,7 +105,7 @@ CHARACTER_CONFIGS = {
     },
 }
 
-current_run_path = "/Users/kylelau519/Library/Application Support/Steam/userdata/243023389/2868840/remote/profile1/saves/current_run.save"
+current_run_path = "~/Library/Application Support/Steam/userdata/########/2868840/remote/profile1/saves/current_run.save"
 
 
 def get_model_path():

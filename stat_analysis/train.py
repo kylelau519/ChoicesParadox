@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 
@@ -33,7 +34,8 @@ class HurdleModel:
 
     def predict(self, X):
         # P(y > 0)
-        p_damage = self.clf.predict_proba(X)[:, 1]
+        # p_damage = self.clf.predict_proba(X)[:, 1]
+        p_damage = self.clf.predict(X)
         # E[y | y > 0] for different cases
         mean_cond = self.reg_mean.predict(X)
         low_cond = self.reg_low.predict(X)
@@ -122,6 +124,8 @@ class HurdleTrainer:
         high_params.pop("tweedie_variance_power", None)
         reg_high = XGBRegressor(**high_params)
         reg_high.fit(x_reg_train, y_reg_train)
+
+        print(f"The model is trained on {x_clf_train.shape[0]} combats.")
 
         self.model = HurdleModel(clf, reg_mean, reg_low, reg_high)
         return self.model
@@ -235,7 +239,7 @@ class HurdleTrainer:
             bins=10,
         )
         plt.axvline(0, color="black", linestyle="--", label="Threshold (p=0.5)")
-        plt.title("Classifier Separation (Score Range -1 to 1)")
+        plt.title(f"Classifier Separation (Score Range -1 to 1) {self.suffix}")
         plt.xlabel("Score (-1: Flawless Probable, 1: Damage Probable)")
         plt.ylabel("Frequency")
         plt.legend()
@@ -256,14 +260,15 @@ class HurdleTrainer:
         return y_pred_mean
 
 
-def main():
+def run_training(character):
     trainer = HurdleTrainer(
-        ascension=[7, 8, 9, 10], suffix=CHARACTER, character=CHARACTER
+        ascension=[7, 8, 9, 10], suffix=character, character=character
     )
+    print(f"\n=== Training for character: {character} ===")
     print(f"Loading data for build_ids: {trainer.build_id}")
     data = trainer.load_data()
     if data[0] is None:
-        print("Error: No data found.")
+        print(f"Error: No data found for {character}.")
         return
 
     (
@@ -279,8 +284,8 @@ def main():
         y_reg_test,
     ) = data
 
-    clf_params = CHARACTER_CONFIGS[CHARACTER]["clf_params"]
-    reg_params = CHARACTER_CONFIGS[CHARACTER]["reg_params"]
+    clf_params = CHARACTER_CONFIGS[character]["clf_params"]
+    reg_params = CHARACTER_CONFIGS[character]["reg_params"]
 
     # Train
     trainer.train(
@@ -295,6 +300,31 @@ def main():
 
     # Test and Report
     trainer.test_model(x_test, y_test, model_path=trainer.model_path)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Train Hurdle Models for characters.")
+    parser.add_argument(
+        "--char",
+        type=str,
+        default=CHARACTER,
+        help="Character to train. Use '*' to train all supported characters.",
+    )
+    args = parser.parse_args()
+
+    if args.char == "*":
+        characters_to_train = list(CHARACTER_CONFIGS.keys())
+        print(f"Training all characters: {characters_to_train}")
+        for char in characters_to_train:
+            run_training(char)
+    else:
+        if args.char not in CHARACTER_CONFIGS:
+            print(
+                f"Error: Character '{args.char}' not found in CHARACTER_CONFIGS. "
+                f"Supported characters: {list(CHARACTER_CONFIGS.keys())}"
+            )
+            return
+        run_training(args.char)
 
 
 if __name__ == "__main__":

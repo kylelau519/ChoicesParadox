@@ -13,7 +13,8 @@ from item_scrapper.items import (
     validate_relic_id,
 )
 from run_preprocessor.deck import Deck
-from stat_analysis.preprocess import GLOBAL_VECTORIZER
+from run_preprocessor.player import Character
+from stat_analysis.preprocess import CHARACTER_TO_CARDS, GLOBAL_VECTORIZER
 
 
 class MasterSchema(Protocol):
@@ -28,6 +29,7 @@ class MasterSchema(Protocol):
 # generator also changes from snapshot, so similar logic should be implemented differently
 class TestCaseGenerator:
     def __init__(self, snapshot: MasterSchema):
+        self.character = getattr(snapshot, "character", None)
         self.current_hp = snapshot.current_hp
         self.max_hp = snapshot.max_hp
         self.deck = snapshot.deck.copy()  # make a copy to modify
@@ -104,6 +106,14 @@ class TestCaseGenerator:
 
         # Snapshot state might have been modified by test methods, so we work on a copy of cards
         temp_cards = self.deck.cards.copy()
+
+        if EXPERIMENT_PANEL["no_other_cards"] and self.character:
+            for card_id in list(temp_cards.keys()):
+                base_id = card_id.rstrip("+")
+                for char, card_set in CHARACTER_TO_CARDS.items():
+                    if char != self.character and base_id in card_set:
+                        temp_cards.pop(card_id)
+                        break
 
         if EXPERIMENT_PANEL["total_deck_size"]:
             temp_cards["TOTAL_DECK_SIZE"] = sum(temp_cards.values())

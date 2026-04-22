@@ -13,11 +13,31 @@ from sklearn.feature_extraction import DictVectorizer
 from sklearn.model_selection import train_test_split
 
 from config import EXPERIMENT_PANEL
-from item_scrapper.items import ALL_CARDS, ALL_ENCOUNTERS, CURSE_CARDS, POTIONS, RELICS
+from item_scrapper.items import (
+    ALL_CARDS,
+    ALL_ENCOUNTERS,
+    CURSE_CARDS,
+    DEFECT_CARDS,
+    IRONCLAD_CARDS,
+    NECROBINDER_CARDS,
+    POTIONS,
+    REGENT_CARDS,
+    RELICS,
+    SILENT_CARDS,
+)
+from run_preprocessor.player import Character
 from run_preprocessor.run_reader import RawData
 from run_preprocessor.snapshot import PlayerSnapshot
 
 logger = logging.getLogger(__name__)
+
+CHARACTER_TO_CARDS = {
+    Character.IRONCLAD: IRONCLAD_CARDS,
+    Character.SILENT: SILENT_CARDS,
+    Character.DEFECT: DEFECT_CARDS,
+    Character.NECROBINDER: NECROBINDER_CARDS,
+    Character.REGENT: REGENT_CARDS,
+}
 
 
 def build_master_schema(experiment_config):
@@ -89,6 +109,24 @@ class RunToInputConverter:
         # --- FEATURE ENGINEERING based on EXPERIMENT_PANEL ---
         raw_cards = self.snapshot_now.deck.cards.copy()
 
+        if EXPERIMENT_PANEL["no_other_cards"]:
+            current_character = self.snapshot_now.character
+            for card_id in list(raw_cards.keys()):
+                base_id = card_id.rstrip("+")
+                for char, card_set in CHARACTER_TO_CARDS.items():
+                    if char != current_character and base_id in card_set:
+                        logger.debug(
+                            f"Removing card {card_id} from input as it's not for character {current_character}, it is from {char}."
+                        )
+                        raw_cards.pop(card_id, None)
+                        logger.debug(
+                            f"Card {card_id} count set to {raw_cards.get(card_id, None)}"
+                        )
+                        logger.debug(
+                            f"Card base {base_id} count is  {raw_cards.get(base_id, None)}"
+                        )
+                        break
+
         if EXPERIMENT_PANEL["total_deck_size"]:
             raw_cards["TOTAL_DECK_SIZE"] = sum(raw_cards.values())
 
@@ -135,6 +173,7 @@ class RunToInputConverter:
             raw_cards["STARTER_RATIO"] = (
                 total_starter / total_cards if total_cards > 0 else 0.0
             )
+
         input.update(raw_cards)
         ### Potions and relics
         raw_potions = self.snapshot_now.potions.copy()
